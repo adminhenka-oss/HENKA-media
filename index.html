@@ -159,7 +159,7 @@
     padding:0; background:none; backdrop-filter:none; line-height:0;
     border-radius:4px; overflow:hidden; box-shadow:0 0 0 1px rgba(255,255,255,0.28);
   }
-  .badge.flag svg{ width:30px; height:20px; display:block; }
+  .badge.flag svg{ width:21px; height:14px; display:block; }
   .card-meta{
     display:flex; justify-content:space-between; align-items:center;
     margin-top:8px; font-size:0.72rem; color: var(--text-faint);
@@ -416,13 +416,15 @@
     background: transparent; color: var(--text-muted); font-weight:700; font-size:0.88rem;
   }
   .history-card{ user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; }
-  .history-card.selected{ outline:2px solid var(--accent); outline-offset:2px; border-radius:16px; }
+  .history-card.selected, .koleksi-wrap .card.selected{ outline:2px solid var(--accent); outline-offset:2px; border-radius:16px; }
+  .koleksi-wrap .card{ user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; }
   .history-bar{
     position:fixed; left:12px; right:12px; bottom:92px; z-index:45;
     display:flex; align-items:center; gap:8px;
     background: var(--bg-raised); border:1px solid var(--border); border-radius:16px;
     padding:10px 12px; box-shadow:0 10px 30px -10px rgba(0,0,0,0.7);
   }
+  .history-bar[hidden], .app-toast[hidden]{ display:none; }
   .history-bar span{ flex:1; font-size:0.86rem; font-weight:700; }
   .history-bar button{
     border:1px solid var(--border); background: var(--bg-panel); color: var(--text);
@@ -646,6 +648,12 @@
     <p>Tap tahan untuk memilih & hapus</p>
   </div>
   <div class="koleksi-wrap" id="koleksiWrap"></div>
+  <div class="history-bar" id="koleksiBar" hidden>
+    <span id="koleksiBarCount"></span>
+    <button type="button" id="koleksiBarAll">Pilih semua</button>
+    <button type="button" id="koleksiBarCancel">Batal</button>
+    <button type="button" class="danger" id="koleksiBarDelete">Hapus</button>
+  </div>
 </div>
 
 <div class="profile-view" id="profileView" hidden>
@@ -935,7 +943,7 @@
             ${flagBadge(item)}
             ${isNew ? '<span class="badge new">Baru</span>' : ''}
           </div>
-          <span class="cover-title">${item.t}</span>
+          ${item.cover ? '' : `<span class="cover-title">${item.t}</span>`}
         </div>
         <div class="card-name">${item.t}</div>
         <div class="card-meta"><span>⊙ ${item.views}</span><span>${item.ch}</span></div>
@@ -998,7 +1006,7 @@
         <div class="card" data-title="${item.t}" data-resume="${h.read}">
           <div class="cover" style="${coverStyle(item)}">
             <div class="badge-row">${flagBadge(item)}</div>
-            <span class="cover-title">${item.t}</span>
+            ${item.cover ? '' : `<span class="cover-title">${item.t}</span>`}
           </div>
           <div class="card-name">${item.t}</div>
           <div class="progress-track"><div class="progress-fill" style="width:${p.pct}%"></div></div>
@@ -1186,9 +1194,10 @@
   document.addEventListener('click', async e=>{
     const card = e.target.closest('.card, .history-card');
     if(!card || !card.dataset.title) return;
-    if(card.classList.contains('history-card')){
-      if(historyLongPressed){ historyLongPressed = false; return; }
-      if(historySelectMode){ toggleHistorySelect(card); return; }
+    const sel = selectors.find(x=>card.closest(x.wrapSel));
+    if(sel){
+      if(sel.longPressed){ sel.longPressed = false; return; }
+      if(sel.active){ sel.toggle(card); return; }
     }
     const title = card.dataset.title;
     const resume = card.dataset.resume;
@@ -1280,7 +1289,7 @@
   }
 
   function showRiwayat(){
-    exitHistorySelect();
+    historySel.exit();
     renderHistory();
     hideAllTabs();
     document.getElementById('riwayatView').hidden = false;
@@ -1290,6 +1299,7 @@
   }
 
   function showKoleksi(){
+    koleksiSel.exit();
     renderKoleksi();
     hideAllTabs();
     document.getElementById('koleksiView').hidden = false;
@@ -2032,27 +2042,74 @@
     }
   });
 
-  let historySelectMode = false;
-  let historyLongPressed = false;
-  const historySelected = new Set();
-  let historyPressTimer = null;
+  const selectors = [];
 
-  function updateHistoryBar(){
-    document.getElementById('historyBar').hidden = !historySelectMode;
-    document.getElementById('historyBarCount').textContent = historySelected.size + ' dipilih';
-  }
-  function exitHistorySelect(){
-    historySelectMode = false;
-    historySelected.clear();
-    document.querySelectorAll('.history-card.selected').forEach(c=>c.classList.remove('selected'));
-    updateHistoryBar();
-  }
-  function toggleHistorySelect(card){
-    const t = card.dataset.title;
-    if(historySelected.has(t)){ historySelected.delete(t); card.classList.remove('selected'); }
-    else { historySelected.add(t); card.classList.add('selected'); }
-    if(historySelected.size === 0){ exitHistorySelect(); return; }
-    updateHistoryBar();
+  function createSelector(cfg){
+    const sel = { active:false, longPressed:false, chosen:new Set(), wrapSel:cfg.wrapSel };
+    const wrap = ()=>document.querySelector(cfg.wrapSel);
+    const $ = suffix => document.getElementById(cfg.barId + suffix);
+    let timer = null, startX = 0, startY = 0;
+
+    sel.update = ()=>{
+      document.getElementById(cfg.barId).hidden = !sel.active;
+      $('Count').textContent = sel.chosen.size + ' dipilih';
+    };
+    sel.exit = ()=>{
+      sel.active = false;
+      sel.chosen.clear();
+      wrap().querySelectorAll('.selected').forEach(c=>c.classList.remove('selected'));
+      sel.update();
+    };
+    sel.toggle = card=>{
+      const t = card.dataset.title;
+      if(sel.chosen.has(t)){ sel.chosen.delete(t); card.classList.remove('selected'); }
+      else { sel.chosen.add(t); card.classList.add('selected'); }
+      if(sel.chosen.size === 0){ sel.exit(); return; }
+      sel.update();
+    };
+
+    const w = wrap();
+    const cancel = ()=>{ clearTimeout(timer); timer = null; };
+    w.addEventListener('pointerdown', e=>{
+      const card = e.target.closest(cfg.cardSel);
+      if(!card) return;
+      cancel();
+      startX = e.clientX; startY = e.clientY;
+      timer = setTimeout(()=>{
+        timer = null;
+        sel.longPressed = true;
+        sel.active = true;
+        if(!sel.chosen.has(card.dataset.title)) sel.toggle(card); else sel.update();
+        if(navigator.vibrate){ try{ navigator.vibrate(20); }catch(_){} }
+      }, 500);
+    });
+    w.addEventListener('pointermove', e=>{
+      if(timer && (Math.abs(e.clientX - startX) > 12 || Math.abs(e.clientY - startY) > 12)) cancel();
+    });
+    ['pointerup','pointercancel','pointerleave'].forEach(ev=>w.addEventListener(ev, ()=>{
+      cancel();
+      setTimeout(()=>{ sel.longPressed = false; }, 400);
+    }));
+    w.addEventListener('contextmenu', e=>{ if(e.target.closest(cfg.cardSel)) e.preventDefault(); });
+
+    $('Cancel').addEventListener('click', sel.exit);
+    $('All').addEventListener('click', ()=>{
+      sel.active = true;
+      w.querySelectorAll(cfg.cardSel).forEach(c=>{
+        sel.chosen.add(c.dataset.title);
+        c.classList.add('selected');
+      });
+      sel.update();
+    });
+    $('Delete').addEventListener('click', ()=>{
+      if(sel.chosen.size === 0) return;
+      if(!confirm(cfg.confirmText(sel.chosen.size))) return;
+      cfg.onDelete([...sel.chosen]);
+      sel.exit();
+    });
+
+    selectors.push(sel);
+    return sel;
   }
 
   function renderHistory(){
@@ -2097,42 +2154,24 @@
     }).join('');
   }
 
-  (function setupHistoryGestures(){
-    const wrap = document.getElementById('historyWrap');
-    function cancel(){ clearTimeout(historyPressTimer); historyPressTimer = null; }
-    wrap.addEventListener('pointerdown', e=>{
-      const card = e.target.closest('.history-card');
-      if(!card) return;
-      cancel();
-      historyPressTimer = setTimeout(()=>{
-        historyLongPressed = true;
-        historySelectMode = true;
-        if(!historySelected.has(card.dataset.title)) toggleHistorySelect(card);
-        else updateHistoryBar();
-        if(navigator.vibrate){ try{ navigator.vibrate(20); }catch(_){} }
-      }, 500);
-    });
-    ['pointerup','pointercancel','pointerleave','pointermove'].forEach(ev=>wrap.addEventListener(ev, cancel));
-    wrap.addEventListener('contextmenu', e=>{ if(e.target.closest('.history-card')) e.preventDefault(); });
-
-    document.getElementById('historyBarCancel').addEventListener('click', exitHistorySelect);
-    document.getElementById('historyBarAll').addEventListener('click', ()=>{
-      historySelectMode = true;
-      document.querySelectorAll('#historyWrap .history-card').forEach(c=>{
-        historySelected.add(c.dataset.title);
-        c.classList.add('selected');
-      });
-      updateHistoryBar();
-    });
-    document.getElementById('historyBarDelete').addEventListener('click', ()=>{
-      if(historySelected.size === 0) return;
-      if(!confirm('Hapus ' + historySelected.size + ' riwayat baca yang dipilih?')) return;
-      saveHistory(loadHistory().filter(h=>!historySelected.has(h.title)));
-      exitHistorySelect();
+  const historySel = createSelector({
+    wrapSel:'#historyWrap', cardSel:'.history-card', barId:'historyBar',
+    confirmText:n=>'Hapus ' + n + ' riwayat baca yang dipilih?',
+    onDelete:titlesToDelete=>{
+      saveHistory(loadHistory().filter(h=>!titlesToDelete.includes(h.title)));
       renderHistory();
       renderContinue();
-    });
-  })();
+    }
+  });
+
+  const koleksiSel = createSelector({
+    wrapSel:'#koleksiWrap', cardSel:'.card', barId:'koleksiBar',
+    confirmText:n=>'Hapus ' + n + ' judul dari Koleksi?',
+    onDelete:titlesToDelete=>{
+      titlesToDelete.forEach(t=>setBookmark(t, false));
+      renderKoleksi();
+    }
+  });
 
   document.getElementById('genreTabs').addEventListener('click', e=>{
     const btn = e.target.closest('.tab');
