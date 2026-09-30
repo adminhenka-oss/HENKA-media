@@ -226,7 +226,7 @@
     font-size:0.8rem; margin: 10px 0 22px;
   }
   .detail-subhead{ font-size:1.1rem; font-weight:800; margin: 0 0 10px; }
-  .synopsis{ color: var(--text-muted); line-height:1.65; font-size:0.9rem; margin:0; }
+  .synopsis{ color: var(--text-muted); line-height:1.65; font-size:0.9rem; margin:0; white-space:pre-line; }
   .synopsis.clamped{
     display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;
   }
@@ -738,6 +738,10 @@
       <label>Views (opsional)</label>
       <input type="text" id="admViews" placeholder="Contoh: 1.2k">
     </div>
+    <div class="admin-field">
+      <label>Sinopsis (opsional)</label>
+      <textarea id="admSynopsis" rows="5" placeholder="Tulis ringkasan cerita di sini…"></textarea>
+    </div>
     <div class="admin-checks">
       <label class="admin-check"><input type="checkbox" id="admRecommended"> Tampilkan di Rekomendasi</label>
       <label class="admin-check"><input type="checkbox" id="admPopular"> Tampilkan di Populer</label>
@@ -875,6 +879,7 @@
       author: row.author,
       genres: row.genres || [],
       category: row.category || null,
+      synopsis: row.synopsis || '',
       isRecommended: !!row.is_recommended,
       isPopular: !!row.is_popular,
       isCustom: true
@@ -1122,15 +1127,9 @@
     currentDetailTitle = title;
 
     const banner = document.getElementById('detailBanner');
-    banner.style.backgroundImage = '';
-    if(item.cover){
-      banner.style.backgroundImage = `url('${item.cover}')`;
-      banner.style.backgroundSize = 'cover';
-      banner.style.backgroundPosition = 'center';
-      banner.style.background = '';
-    } else {
-      banner.style.background = `linear-gradient(135deg, ${item.c[0]}, ${item.c[1]})`;
-    }
+    banner.style.cssText = item.cover
+      ? `background-image:url('${item.cover}'); background-size:cover; background-position:center;`
+      : `background: linear-gradient(135deg, ${item.c[0]}, ${item.c[1]});`;
     document.getElementById('detailStatus').textContent =
       item.status === 'Ongoing' ? 'Masih berlanjut' : 'Tamat';
     document.getElementById('detailTitle').textContent = item.t;
@@ -1156,7 +1155,7 @@
     bookmarkBtn._paint = paintStats;
 
     const synEl = document.getElementById('detailSynopsis');
-    synEl.textContent = buildSynopsis(item);
+    synEl.textContent = item.synopsis || 'Belum ada sinopsis.';
     synEl.classList.add('clamped');
     document.getElementById('synopsisToggle').textContent = '⌄';
 
@@ -1673,8 +1672,8 @@
 
   function friendlyError(err){
     const m = (err && err.message) ? err.message : String(err);
-    if(/is_recommended|is_popular|schema cache/i.test(m))
-      return 'Kolom baru belum ada di database. Jalankan admin-flags.sql di Supabase SQL Editor dulu.';
+    if(/is_recommended|is_popular|synopsis|schema cache/i.test(m))
+      return 'Kolom baru belum ada di database. Jalankan admin-synopsis.sql (dan admin-flags.sql kalau belum) di Supabase SQL Editor dulu.';
     if(/row-level security|permission denied/i.test(m))
       return 'Ditolak database. Pastikan kamu login dengan adminhenka@gmail.com dan admin-security.sql sudah dijalankan.';
     if(/NotReadable|could not be read|ProgressEvent|tidak bisa dibaca/i.test(m))
@@ -1711,6 +1710,7 @@
     document.getElementById('admRating').value = it.rating;
     document.getElementById('admChapters').value = parseInt(String(it.ch).replace(/\D/g,'')) || 1;
     document.getElementById('admViews').value = it.views === '0' ? '' : it.views;
+    document.getElementById('admSynopsis').value = it.synopsis || '';
     document.getElementById('admRecommended').checked = !!it.isRecommended;
     document.getElementById('admPopular').checked = !!it.isPopular;
     document.getElementById('admSubmitBtn').textContent = 'Simpan Perubahan';
@@ -1741,6 +1741,7 @@
     const status = document.getElementById('admStatus').value;
     const chapters = document.getElementById('admChapters').value;
     const views = document.getElementById('admViews').value.trim() || '0';
+    const synopsis = document.getElementById('admSynopsis').value.trim();
     const isRec = document.getElementById('admRecommended').checked;
     const isPop = document.getElementById('admPopular').checked;
 
@@ -1765,6 +1766,7 @@
         status,
         author,
         genres: [mainGenre, ...extra],
+        synopsis: synopsis || null,
         is_recommended: isRec,
         is_popular: isPop
       };
