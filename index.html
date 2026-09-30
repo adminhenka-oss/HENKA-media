@@ -775,9 +775,30 @@
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNxcXVjZWZzaXV1bW1hYmZxZ2JtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4OTYxNDgsImV4cCI6MjEwNTQ3MjE0OH0.GlEdvsTLUFGON4o7DHirG7ShyapiIEhK7_yADqNn1w8';
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+  async function shrinkImage(file, maxW, quality){
+    if(!/^image\/(jpeg|png|webp)$/.test(file.type)) return file;
+    const bmp = await createImageBitmap(file);
+    const scale = Math.min(1, maxW / bmp.width);
+    if(scale === 1 && file.size < 1500000){ bmp.close && bmp.close(); return file; }
+    const w = Math.round(bmp.width * scale), h = Math.round(bmp.height * scale);
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    c.getContext('2d').drawImage(bmp, 0, 0, w, h);
+    bmp.close && bmp.close();
+    const blob = await new Promise(r=>c.toBlob(r, 'image/jpeg', quality));
+    if(!blob) return file;
+    return new File([blob], file.name.replace(/\.\w+$/, '') + '.jpg', { type:'image/jpeg' });
+  }
+
   async function uploadImage(file, folder){
+    if(folder === 'covers'){
+      try{ file = await shrinkImage(file, 900, 0.88); }catch(e){}
+    }
     const dataUrl = await readFileAsDataURL(file);
     const dataBase64 = dataUrl.split(',')[1];
+    if(dataBase64.length > 4300000){
+      throw new Error('Gambar "' + file.name + '" terlalu besar (maksimal sekitar 3 MB per gambar). Kecilkan dulu ukurannya.');
+    }
     const { data: { session } } = await sb.auth.getSession();
     if(!session) throw new Error('Kamu harus masuk dengan Google dulu untuk mengunggah gambar.');
     const res = await fetch('/api/upload', {
@@ -1370,7 +1391,7 @@
     return new Promise((resolve, reject)=>{
       const reader = new FileReader();
       reader.onload = ()=> resolve(reader.result);
-      reader.onerror = reject;
+      reader.onerror = ()=> reject(reader.error || new Error('NotReadableError: file tidak bisa dibaca'));
       reader.readAsDataURL(file);
     });
   }
@@ -1521,6 +1542,8 @@
       return 'Kolom baru belum ada di database. Jalankan admin-flags.sql di Supabase SQL Editor dulu.';
     if(/row-level security|permission denied/i.test(m))
       return 'Ditolak database. Pastikan kamu login dengan adminhenka@gmail.com dan admin-security.sql sudah dijalankan.';
+    if(/NotReadable|could not be read|ProgressEvent|tidak bisa dibaca/i.test(m))
+      return 'File gambar tidak bisa dibaca HP. Pilih ulang gambarnya dari penyimpanan HP (folder Download/DCIM, bukan dari Google Photos atau cloud), lalu simpan lagi.';
     if(/Harus login/i.test(m))
       return 'Server upload menolak login. Pastikan SUPABASE_ANON_KEY sudah ditambahkan di Vercel, lalu Redeploy.';
     if(/Hanya admin/i.test(m))
