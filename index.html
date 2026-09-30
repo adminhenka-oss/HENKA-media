@@ -155,6 +155,11 @@
     background: rgba(0,0,0,0.45); color:#fff; backdrop-filter: blur(2px);
   }
   .badge.new{ background: var(--ember); }
+  .badge.flag{
+    padding:0; background:none; backdrop-filter:none; line-height:0;
+    border-radius:4px; overflow:hidden; box-shadow:0 0 0 1px rgba(255,255,255,0.28);
+  }
+  .badge.flag svg{ width:30px; height:20px; display:block; }
   .card-meta{
     display:flex; justify-content:space-between; align-items:center;
     margin-top:8px; font-size:0.72rem; color: var(--text-faint);
@@ -410,6 +415,20 @@
     width:100%; padding:12px; border-radius:12px; border:1px solid var(--border);
     background: transparent; color: var(--text-muted); font-weight:700; font-size:0.88rem;
   }
+  .history-card{ user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; }
+  .history-card.selected{ outline:2px solid var(--accent); outline-offset:2px; border-radius:16px; }
+  .history-bar{
+    position:fixed; left:12px; right:12px; bottom:92px; z-index:45;
+    display:flex; align-items:center; gap:8px;
+    background: var(--bg-raised); border:1px solid var(--border); border-radius:16px;
+    padding:10px 12px; box-shadow:0 10px 30px -10px rgba(0,0,0,0.7);
+  }
+  .history-bar span{ flex:1; font-size:0.86rem; font-weight:700; }
+  .history-bar button{
+    border:1px solid var(--border); background: var(--bg-panel); color: var(--text);
+    border-radius:999px; padding:8px 13px; font-weight:700; font-size:0.8rem;
+  }
+  .history-bar .danger{ background: var(--ember); border-color: transparent; color:#fff; }
   /* Admin panel */
   .admin-view{ background: var(--bg); min-height:100vh; }
   .admin-top{ display:flex; align-items:center; gap:12px; padding:20px 20px 8px; }
@@ -605,6 +624,12 @@
     <p>Tap tahan untuk memilih & hapus</p>
   </div>
   <div class="history-wrap" id="historyWrap"></div>
+  <div class="history-bar" id="historyBar" hidden>
+    <span id="historyBarCount"></span>
+    <button type="button" id="historyBarAll">Pilih semua</button>
+    <button type="button" id="historyBarCancel">Batal</button>
+    <button type="button" class="danger" id="historyBarDelete">Hapus</button>
+  </div>
 </div>
 
 <div class="seeall-view" id="seeAllView" hidden>
@@ -841,6 +866,7 @@
       status: row.status,
       author: row.author,
       genres: row.genres || [],
+      category: row.category || null,
       isRecommended: !!row.is_recommended,
       isPopular: !!row.is_popular,
       isCustom: true
@@ -881,12 +907,32 @@
     return `background: linear-gradient(150deg, ${item.c[0]}, ${item.c[1]});`;
   }
 
+  const FLAGS = {
+    Manhua: '<svg viewBox="0 0 30 20" xmlns="http://www.w3.org/2000/svg"><rect width="30" height="20" fill="#DE2910"/><polygon fill="#FFDE00" points="5.00,2.00 5.67,4.07 7.85,4.07 6.09,5.35 6.76,7.43 5.00,6.15 3.24,7.43 3.91,5.35 2.15,4.07 4.33,4.07"/><polygon fill="#FFDE00" points="9.14,2.51 9.62,1.97 9.25,1.34 9.91,1.63 10.39,1.08 10.33,1.80 11.00,2.09 10.29,2.25 10.22,2.97 9.85,2.35"/><polygon fill="#FFDE00" points="11.01,4.14 11.66,3.82 11.56,3.10 12.07,3.62 12.72,3.30 12.38,3.95 12.88,4.47 12.17,4.34 11.83,4.99 11.73,4.27"/><polygon fill="#FFDE00" points="11.04,6.73 11.76,6.70 11.96,6.00 12.21,6.68 12.94,6.66 12.37,7.10 12.62,7.79 12.01,7.38 11.44,7.83 11.64,7.13"/><polygon fill="#FFDE00" points="9.22,8.38 9.90,8.63 10.35,8.06 10.32,8.79 11.00,9.05 10.30,9.24 10.26,9.96 9.87,9.36 9.16,9.55 9.62,8.98"/></svg>',
+    Manhwa: '<svg viewBox="0 0 30 20" xmlns="http://www.w3.org/2000/svg"><rect width="30" height="20" fill="#fff"/><circle cx="15" cy="10" r="4.5" fill="#0047A0"/><path d="M10.5 10A4.5 4.5 0 0 1 19.5 10A2.25 2.25 0 0 1 15 10A2.25 2.25 0 0 0 10.5 10Z" fill="#CD2E3A"/><g transform="translate(4.6 4.2) rotate(-56.3)" fill="#000"><rect x="-2.6" y="-2.2" width="5.2" height="1.1"/><rect x="-2.6" y="0.0" width="5.2" height="1.1"/><rect x="-2.6" y="2.2" width="5.2" height="1.1"/></g><g transform="translate(25.4 4.2) rotate(56.3)" fill="#000"><rect x="-2.6" y="-2.2" width="2.2" height="1.1"/><rect x="0.4" y="-2.2" width="2.2" height="1.1"/><rect x="-2.6" y="0.0" width="5.2" height="1.1"/><rect x="-2.6" y="2.2" width="2.2" height="1.1"/><rect x="0.4" y="2.2" width="2.2" height="1.1"/></g><g transform="translate(4.6 15.8) rotate(56.3)" fill="#000"><rect x="-2.6" y="-2.2" width="5.2" height="1.1"/><rect x="-2.6" y="0.0" width="2.2" height="1.1"/><rect x="0.4" y="0.0" width="2.2" height="1.1"/><rect x="-2.6" y="2.2" width="5.2" height="1.1"/></g><g transform="translate(25.4 15.8) rotate(-56.3)" fill="#000"><rect x="-2.6" y="-2.2" width="2.2" height="1.1"/><rect x="0.4" y="-2.2" width="2.2" height="1.1"/><rect x="-2.6" y="0.0" width="2.2" height="1.1"/><rect x="0.4" y="0.0" width="2.2" height="1.1"/><rect x="-2.6" y="2.2" width="2.2" height="1.1"/><rect x="0.4" y="2.2" width="2.2" height="1.1"/></g></svg>',
+    Manga: '<svg viewBox="0 0 30 20" xmlns="http://www.w3.org/2000/svg"><rect width="30" height="20" fill="#fff"/><circle cx="15" cy="10" r="6" fill="#BC002D"/></svg>'
+  };
+
+  function categoryOf(item){
+    if(item.category) return item.category;
+    for(const cat of Object.keys(titles)){
+      if(titles[cat].includes(item)) return cat;
+    }
+    return null;
+  }
+
+  function flagBadge(item){
+    const cat = categoryOf(item);
+    if(cat && FLAGS[cat]) return `<span class="badge flag" title="${cat}">${FLAGS[cat]}</span>`;
+    return `<span class="badge">${item.tag}</span>`;
+  }
+
   function cardHTML(item, isNew){
     return `
       <div class="card" data-title="${item.t}">
         <div class="cover" style="${coverStyle(item)}">
           <div class="badge-row">
-            <span class="badge">${item.tag}</span>
+            ${flagBadge(item)}
             ${isNew ? '<span class="badge new">Baru</span>' : ''}
           </div>
           <span class="cover-title">${item.t}</span>
@@ -906,25 +952,57 @@
     renderPopuler(genre);
   }
 
-  function renderContinue(){
-    let progress = {};
+  const HISTORY_KEY = 'henka_history';
+
+  function loadHistory(){
     try{
-      const raw = localStorage.getItem('henka_progress');
-      progress = raw ? JSON.parse(raw) : {};
-    }catch(e){ progress = {}; }
-    const html = Object.keys(progress).map(name=>{
-      const item = allTitles().find(x=>x.t===name);
+      const raw = localStorage.getItem(HISTORY_KEY);
+      const list = raw ? JSON.parse(raw) : [];
+      return Array.isArray(list) ? list : [];
+    }catch(e){ return []; }
+  }
+  function saveHistory(list){
+    try{ localStorage.setItem(HISTORY_KEY, JSON.stringify(list)); }catch(e){}
+  }
+  function recordHistory(title, num){
+    const n = Number(num);
+    const chap = isNaN(n) ? num : n;
+    const prev = loadHistory().find(h=>h.title === title);
+    const max = Math.max(isNaN(n) ? 0 : n, prev && prev.max ? prev.max : 0);
+    const list = loadHistory().filter(h=>h.title !== title);
+    list.unshift({ title, read: chap, max, at: Date.now() });
+    saveHistory(list.slice(0, 50));
+  }
+  function historyProgress(h, item){
+    const total = parseInt(String(item.ch).replace(/\D/g,'')) || h.max || 1;
+    const done = h.max || Number(h.read) || 0;
+    return { total, done, pct: Math.min(100, Math.round((done / total) * 100)) };
+  }
+  function historyDateLabel(ts){
+    const d = new Date(ts), now = new Date();
+    const y = new Date(now); y.setDate(now.getDate() - 1);
+    if(d.toDateString() === now.toDateString()) return 'Hari ini';
+    if(d.toDateString() === y.toDateString()) return 'Kemarin';
+    return d.toLocaleDateString('id-ID', { day:'numeric', month:'long', year:'numeric' });
+  }
+  function historyTimeLabel(ts){
+    return new Date(ts).toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
+  }
+
+  function renderContinue(){
+    const html = loadHistory().slice(0, 10).map(h=>{
+      const item = findItem(h.title);
       if(!item) return '';
-      const pct = progress[name];
+      const p = historyProgress(h, item);
       return `
-        <div class="card" data-title="${item.t}">
+        <div class="card" data-title="${item.t}" data-resume="${h.read}">
           <div class="cover" style="${coverStyle(item)}">
-            <div class="badge-row"><span class="badge">${item.tag}</span></div>
+            <div class="badge-row">${flagBadge(item)}</div>
             <span class="cover-title">${item.t}</span>
           </div>
           <div class="card-name">${item.t}</div>
-          <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
-          <div class="card-meta"><span>${pct}% selesai</span></div>
+          <div class="progress-track"><div class="progress-fill" style="width:${p.pct}%"></div></div>
+          <div class="card-meta"><span>Lanjut Chapter ${h.read}</span></div>
         </div>`;
     }).join('');
     document.getElementById('continueRow').innerHTML =
@@ -1105,9 +1183,21 @@
     else { showHome(); }
   }
 
-  document.addEventListener('click', e=>{
+  document.addEventListener('click', async e=>{
     const card = e.target.closest('.card, .history-card');
-    if(card && card.dataset.title){ openDetail(card.dataset.title); }
+    if(!card || !card.dataset.title) return;
+    if(card.classList.contains('history-card')){
+      if(historyLongPressed){ historyLongPressed = false; return; }
+      if(historySelectMode){ toggleHistorySelect(card); return; }
+    }
+    const title = card.dataset.title;
+    const resume = card.dataset.resume;
+    if(resume){
+      await openDetail(title);
+      openReader(title, resume);
+      return;
+    }
+    openDetail(title);
   });
 
   document.getElementById('detailBack').addEventListener('click', closeDetail);
@@ -1183,12 +1273,14 @@
   function showHome(){
     hideAllTabs();
     document.querySelector('main').style.display = '';
+    renderContinue();
     activeTab = 'home';
     setActiveNav('navHome');
     window.scrollTo(0,0);
   }
 
   function showRiwayat(){
+    exitHistorySelect();
     renderHistory();
     hideAllTabs();
     document.getElementById('riwayatView').hidden = false;
@@ -1505,6 +1597,8 @@
 
   async function openReader(title, num){
     const item = findItem(title);
+    currentDetailTitle = title;
+    if(item){ recordHistory(title, num); }
     document.getElementById('readerTitle').textContent = title;
     document.getElementById('readerChapterLabel').textContent = `Chapter ${num}`;
     const pagesWrap = document.getElementById('readerPages');
@@ -1938,40 +2032,60 @@
     }
   });
 
-  const historyData = [];
+  let historySelectMode = false;
+  let historyLongPressed = false;
+  const historySelected = new Set();
+  let historyPressTimer = null;
+
+  function updateHistoryBar(){
+    document.getElementById('historyBar').hidden = !historySelectMode;
+    document.getElementById('historyBarCount').textContent = historySelected.size + ' dipilih';
+  }
+  function exitHistorySelect(){
+    historySelectMode = false;
+    historySelected.clear();
+    document.querySelectorAll('.history-card.selected').forEach(c=>c.classList.remove('selected'));
+    updateHistoryBar();
+  }
+  function toggleHistorySelect(card){
+    const t = card.dataset.title;
+    if(historySelected.has(t)){ historySelected.delete(t); card.classList.remove('selected'); }
+    else { historySelected.add(t); card.classList.add('selected'); }
+    if(historySelected.size === 0){ exitHistorySelect(); return; }
+    updateHistoryBar();
+  }
 
   function renderHistory(){
-    const groups = [];
-    historyData.forEach(h=>{
-      let g = groups.find(x=>x.date===h.date);
-      if(!g){ g = { date:h.date, items:[] }; groups.push(g); }
-      g.items.push(h);
-    });
-
-    if(groups.length === 0){
+    const list = loadHistory().filter(h=>findItem(h.title));
+    if(list.length === 0){
       document.getElementById('historyWrap').innerHTML =
-        `<div class="koleksi-empty">Belum ada riwayat baca.</div>`;
+        `<div class="koleksi-empty">Belum ada riwayat baca.<br>Buka satu chapter dan riwayatnya muncul di sini.</div>`;
       return;
     }
+    const groups = [];
+    list.forEach(h=>{
+      const label = historyDateLabel(h.at);
+      let g = groups.find(x=>x.date === label);
+      if(!g){ g = { date:label, items:[] }; groups.push(g); }
+      g.items.push(h);
+    });
     document.getElementById('historyWrap').innerHTML = groups.map(g=>{
       const cards = g.items.map(h=>{
         const item = findItem(h.title);
-        if(!item) return '';
-        const total = parseInt(item.ch.replace(/\D/g,'')) || h.read;
-        const pct = Math.min(100, Math.round((h.read/total)*100));
+        const p = historyProgress(h, item);
         return `
-          <div class="history-card" data-title="${item.t}">
+          <div class="history-card" data-title="${item.t}" data-resume="${h.read}">
             <div class="history-cover" style="${coverStyle(item)}"></div>
             <div class="history-info">
               <div class="history-top">
                 <span class="history-title">${item.t}</span>
-                <span class="history-time">${h.time}</span>
+                <span class="history-time">${historyTimeLabel(h.at)}</span>
               </div>
-              <div class="history-chapter">Chapter ${h.read}</div>
+              <div class="history-chapter">Terakhir baca: Chapter ${h.read}</div>
               <div class="history-progress-track">
-                <div class="history-progress-fill" style="width:${pct}%"></div>
+                <div class="history-progress-fill" style="width:${p.pct}%"></div>
               </div>
-              <div class="history-progress-label">${h.read}/${total}</div>
+              <div class="history-progress-label">${p.done}/${p.total}</div>
             </div>
           </div>`;
       }).join('');
@@ -1982,6 +2096,43 @@
         </div>`;
     }).join('');
   }
+
+  (function setupHistoryGestures(){
+    const wrap = document.getElementById('historyWrap');
+    function cancel(){ clearTimeout(historyPressTimer); historyPressTimer = null; }
+    wrap.addEventListener('pointerdown', e=>{
+      const card = e.target.closest('.history-card');
+      if(!card) return;
+      cancel();
+      historyPressTimer = setTimeout(()=>{
+        historyLongPressed = true;
+        historySelectMode = true;
+        if(!historySelected.has(card.dataset.title)) toggleHistorySelect(card);
+        else updateHistoryBar();
+        if(navigator.vibrate){ try{ navigator.vibrate(20); }catch(_){} }
+      }, 500);
+    });
+    ['pointerup','pointercancel','pointerleave','pointermove'].forEach(ev=>wrap.addEventListener(ev, cancel));
+    wrap.addEventListener('contextmenu', e=>{ if(e.target.closest('.history-card')) e.preventDefault(); });
+
+    document.getElementById('historyBarCancel').addEventListener('click', exitHistorySelect);
+    document.getElementById('historyBarAll').addEventListener('click', ()=>{
+      historySelectMode = true;
+      document.querySelectorAll('#historyWrap .history-card').forEach(c=>{
+        historySelected.add(c.dataset.title);
+        c.classList.add('selected');
+      });
+      updateHistoryBar();
+    });
+    document.getElementById('historyBarDelete').addEventListener('click', ()=>{
+      if(historySelected.size === 0) return;
+      if(!confirm('Hapus ' + historySelected.size + ' riwayat baca yang dipilih?')) return;
+      saveHistory(loadHistory().filter(h=>!historySelected.has(h.title)));
+      exitHistorySelect();
+      renderHistory();
+      renderContinue();
+    });
+  })();
 
   document.getElementById('genreTabs').addEventListener('click', e=>{
     const btn = e.target.closest('.tab');
