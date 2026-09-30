@@ -660,7 +660,7 @@
     </div>
     <div class="admin-field">
       <label>Gambar cover dari galeri HP (opsional, kalau kosong pakai warna default)</label>
-      <input type="file" id="admCoverFile" accept="image/*">
+      <input type="file" id="admCoverFile">
     </div>
     <div class="admin-row-2">
       <div class="admin-field">
@@ -730,7 +730,7 @@
       </div>
       <div class="admin-field">
         <label>Gambar halaman dari galeri HP (pilih beberapa sekaligus, urut dari halaman pertama)</label>
-        <input type="file" id="chImgFiles" accept="image/*" multiple required>
+        <input type="file" id="chImgFiles" multiple required>
       </div>
       <button type="submit" class="admin-submit">Simpan Halaman Chapter</button>
     </form>
@@ -791,6 +791,9 @@
   }
 
   async function uploadImage(file, folder){
+    if(!/^image\//.test(file.type || '')){
+      throw new Error('"' + file.name + '" bukan file gambar (JPG/PNG/WEBP).');
+    }
     if(folder === 'covers'){
       try{ file = await shrinkImage(file, 900, 0.88); }catch(e){}
     }
@@ -1387,13 +1390,32 @@
     if(error) throw error;
   }
 
-  function readFileAsDataURL(file){
+  function readViaFileReader(file){
     return new Promise((resolve, reject)=>{
       const reader = new FileReader();
       reader.onload = ()=> resolve(reader.result);
-      reader.onerror = ()=> reject(reader.error || new Error('NotReadableError: file tidak bisa dibaca'));
+      reader.onerror = ()=> reject(reader.error || new Error('FileReader gagal'));
       reader.readAsDataURL(file);
     });
+  }
+
+  async function readViaArrayBuffer(file){
+    const buf = new Uint8Array(await file.arrayBuffer());
+    let bin = '';
+    for(let i = 0; i < buf.length; i += 0x8000){
+      bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
+    }
+    return 'data:' + (file.type || 'image/jpeg') + ';base64,' + btoa(bin);
+  }
+
+  async function readFileAsDataURL(file){
+    try{ return await readViaFileReader(file); }
+    catch(e1){
+      try{ return await readViaArrayBuffer(file); }
+      catch(e2){
+        throw new Error('NotReadable: ' + file.name + ' (' + file.size + ' byte, ' + (file.type || 'tipe tidak dikenal') + ')');
+      }
+    }
   }
 
   async function listChapterImageEntries(){
@@ -1534,6 +1556,15 @@
     showProfile();
   });
 
+  document.getElementById('admCoverFile').addEventListener('change', function(){
+    const f = this.files && this.files[0];
+    const toast = document.getElementById('adminToast');
+    if(!f){ return; }
+    toast.textContent = 'Cover dipilih: ' + f.name + ' (' + Math.round(f.size/1024) + ' KB, ' + (f.type || 'tipe tidak dikenal') + ')' +
+      (f.size === 0 ? ' — file kosong, pilih gambar lain.' : '');
+    toast.hidden = false;
+  });
+
   let editingItem = null;
 
   function friendlyError(err){
@@ -1543,7 +1574,7 @@
     if(/row-level security|permission denied/i.test(m))
       return 'Ditolak database. Pastikan kamu login dengan adminhenka@gmail.com dan admin-security.sql sudah dijalankan.';
     if(/NotReadable|could not be read|ProgressEvent|tidak bisa dibaca/i.test(m))
-      return 'File gambar tidak bisa dibaca HP. Pilih ulang gambarnya dari penyimpanan HP (folder Download/DCIM, bukan dari Google Photos atau cloud), lalu simpan lagi.';
+      return 'Chrome tidak bisa membaca file gambar ini. Cek izin Chrome untuk Foto/File di pengaturan HP, atau coba gambar lain. Detail: ' + m;
     if(/Harus login/i.test(m))
       return 'Server upload menolak login. Pastikan SUPABASE_ANON_KEY sudah ditambahkan di Vercel, lalu Redeploy.';
     if(/Hanya admin/i.test(m))
