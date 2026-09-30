@@ -764,10 +764,6 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
       <label>Genre tambahan (pisahkan dengan koma, opsional)</label>
       <input type="text" id="admGenresExtra" placeholder="Contoh: Action, Adventure">
     </div>
-    <div class="admin-field">
-      <label>Penulis</label>
-      <input type="text" id="admAuthor" placeholder="Nama penulis" required>
-    </div>
     <div class="admin-row-2">
       <div class="admin-field">
         <label>Rating</label>
@@ -776,7 +772,7 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
       <div class="admin-field">
         <label>Jumlah chapter</label>
         <input type="number" id="admChapters" min="1" placeholder="12" required>
-  </div>
+      </div>
     </div>
     <div class="admin-field">
       <label>Views (opsional)</label>
@@ -1021,7 +1017,7 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
       list.push({ num: total - i, date: dateCycle[Math.min(i, dateCycle.length-1)] });
     }
     return list;
-    }
+  }
 
   async function buildChaptersRemote(item){
     const { data, error } = await sb
@@ -1156,7 +1152,7 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
     else if(detailOrigin === 'seeall' && seeAllState){ showSeeAll(seeAllState.kind, seeAllState.genre); }
     else if(detailOrigin === 'profile'){ showProfile(); }
     else { showHome(); }
-    }
+  }
 
   document.addEventListener('click', e=>{
     const card = e.target.closest('.card, .history-card');
@@ -1287,7 +1283,7 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
       provider: 'google',
       options: { redirectTo: window.location.origin }
     });
-    }
+  }
 
   async function signOutUser(){
     await sb.auth.signOut();
@@ -1374,8 +1370,8 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
           ${menuItem('bell','Sinkronisasi Cloud',{locked:true})}
           ${menuItem('bell','Lencana & Pencapaian',{locked:true})}
         </div>`;
-  }
     }
+  }
 
   document.getElementById('profileView').addEventListener('click', e=>{
     const btn = e.target.closest('[data-action]');
@@ -1450,7 +1446,7 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
-    }
+  }
 
   async function listChapterImageEntries(){
     const dbTitles = allTitles().filter(it=>it.supabaseId);
@@ -1561,8 +1557,8 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
     } else {
       pagesWrap.hidden = true;
       emptyMsg.hidden = false;
-  }
     }
+  }
 
   document.getElementById('readerBack').addEventListener('click', ()=>{
     document.getElementById('readerView').hidden = true;
@@ -1706,7 +1702,7 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
       toast.textContent = 'Gagal menyimpan: ' + err.message;
     }
     toast.hidden = false;
-    });
+  });
 
   document.getElementById('adminItemList').addEventListener('click', async e=>{
     const actions = e.target.closest('.a-actions');
@@ -1808,7 +1804,7 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
     const g = chip.dataset.genre;
     if(selectedFilters.has(g)){ selectedFilters.delete(g); } else { selectedFilters.add(g); }
     chip.classList.toggle('active');
-    });
+  });
 
   document.getElementById('filterReset').addEventListener('click', ()=>{
     selectedFilters.clear();
@@ -1903,8 +1899,8 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
       el.style.backgroundPosition = 'center';
     } else {
       el.style.backgroundImage = '';
-}
-}
+    }
+  }
 
   document.getElementById('headerAvatar').addEventListener('click', showProfile);
   document.getElementById('continueSeeAll').addEventListener('click', e=>{
@@ -1992,14 +1988,6 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
         </div>`;
     }).join('');
   }
-
-  document.getElementById('genreTabs').addEventListener('click', e=>{
-    const btn = e.target.closest('.tab');
-    if(!btn) return;
-    document.querySelectorAll('#genreTabs .tab').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
-    selectGenre(btn.dataset.genre);
-}
 
   document.getElementById('genreTabs').addEventListener('click', e=>{
     const btn = e.target.closest('.tab');
