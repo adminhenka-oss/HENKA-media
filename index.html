@@ -623,7 +623,7 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
     </div>
     <div class="section-head">
       <h2 class="section-title">Rekomendasi</h2>
-      <a class="section-link" href="#">Lihat semua</a>
+      <a class="section-link" href="#" data-seeall="rec">Lihat semua</a>
     </div>
     <div class="card-row" id="recRow"></div>
   </section>
@@ -631,7 +631,7 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
   <section>
     <div class="section-head">
       <h2 class="section-title">Update</h2>
-      <a class="section-link" href="#">Lihat semua</a>
+      <a class="section-link" href="#" data-seeall="update">Lihat semua</a>
     </div>
     <div class="grid" id="updateGrid"></div>
   </section>
@@ -639,7 +639,7 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
   <section>
     <div class="section-head">
       <h2 class="section-title">Populer</h2>
-      <a class="section-link" href="#">Lihat semua</a>
+      <a class="section-link" href="#" data-seeall="populer">Lihat semua</a>
     </div>
     <div class="card-row" id="populerRow"></div>
   </section>
@@ -682,6 +682,14 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
     <p>Tap tahan untuk memilih & hapus</p>
   </div>
   <div class="history-wrap" id="historyWrap"></div>
+</div>
+
+<div class="seeall-view" id="seeAllView" hidden>
+  <div class="seeall-top">
+    <button class="circle-btn" id="seeAllBack" aria-label="Kembali"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+    <h1 id="seeAllTitle"></h1>
+  </div>
+  <div class="seeall-wrap" id="seeAllWrap"></div>
 </div>
 
 <div class="koleksi-view" id="koleksiView" hidden>
@@ -768,16 +776,21 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
       <div class="admin-field">
         <label>Jumlah chapter</label>
         <input type="number" id="admChapters" min="1" placeholder="12" required>
-      </div>
+  </div>
     </div>
     <div class="admin-field">
       <label>Views (opsional)</label>
       <input type="text" id="admViews" placeholder="Contoh: 1.2k">
     </div>
-    <button type="submit" class="admin-submit">Tambah Judul</button>
+    <div class="admin-checks">
+      <label class="admin-check"><input type="checkbox" id="admRecommended"> Tampilkan di Rekomendasi</label>
+      <label class="admin-check"><input type="checkbox" id="admPopular"> Tampilkan di Populer</label>
+    </div>
+    <button type="submit" class="admin-submit" id="admSubmitBtn">Tambah Judul</button>
+    <button type="button" class="admin-cancel" id="admCancelEdit" hidden>Batal edit</button>
   </form>
   <div class="admin-list">
-    <h3>Konten yang Kamu Tambahkan</h3>
+    <h3>Daftar Judul</h3>
     <div id="adminItemList"></div>
   </div>
 
@@ -865,32 +878,7 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
     return data.url;
   }
 
-  const titles = {
-    Manhwa: [
-      {t:"Bayangan Sang Penempa", c:["#5b2a8c","#1c0e2e"], ch:"CH.142", views:"3.2m", tag:"Fantasy", rating:"8.6", status:"Ongoing", author:"Han Iseul", genres:["Fantasy","Action","Adventure"]},
-      {t:"Raja Level Nol", c:["#7c3aed","#1a0b2e"], ch:"CH.58", views:"1.1m", tag:"Action", rating:"8.2", status:"Ongoing", author:"Park Doyun", genres:["Action","Fantasy","Game"]},
-      {t:"Musim Semi Terakhir Elira", c:["#9b6bff","#2b1442"], ch:"CH.21", views:"640k", tag:"Drama", rating:"7.9", status:"Completed", author:"Yoon Serin", genres:["Drama","Romance","School"]},
-      {t:"Pedang Beku Utara", c:["#4338ca","#160a26"], ch:"CH.97", views:"2.4m", tag:"Fantasy", rating:"8.8", status:"Ongoing", author:"Choi Ganghyun", genres:["Fantasy","Action","Adventure"]},
-      {t:"Pewaris Tahta Bayangan", c:["#6b2fa0","#190b2b"], ch:"CH.36", views:"512k", tag:"Action", rating:"8.0", status:"Ongoing", author:"Han Iseul", genres:["Action","Intrigue","Fantasy"]},
-      {t:"Kontrak dengan Iblis Es", c:["#8455d6","#1f0f33"], ch:"CH.80", views:"1.5m", tag:"Fantasy", rating:"8.4", status:"Ongoing", author:"Yoon Serin", genres:["Fantasy","Romance","Supernatural"]},
-    ],
-    Manga: [
-      {t:"Distrik Asap Ungu", c:["#8b3a9c","#1c0e2e"], ch:"CH.12", views:"210k", tag:"Mystery", rating:"7.7", status:"Ongoing", author:"Saito Ren", genres:["Mystery","Thriller"]},
-      {t:"Klub Dansa Malam", c:["#5c3a99","#180b2b"], ch:"CH.77", views:"980k", tag:"Slice of Life", rating:"8.1", status:"Completed", author:"Fujimori Ai", genres:["Slice of Life","Musical","School"]},
-      {t:"Penjaga Gerbang Kabut", c:["#6d28d9","#150a24"], ch:"CH.33", views:"415k", tag:"Action", rating:"7.8", status:"Ongoing", author:"Kuroda Isamu", genres:["Action","Supernatural"]},
-      {t:"Surat untuk Bulan", c:["#a06bff","#241238"], ch:"CH.9", views:"88k", tag:"Romance", rating:"8.5", status:"Completed", author:"Fujimori Ai", genres:["Romance","Drama"]},
-      {t:"Catatan Detektif Malam", c:["#5b2a8c","#1c0e2e"], ch:"CH.25", views:"330k", tag:"Mystery", rating:"7.6", status:"Ongoing", author:"Saito Ren", genres:["Mystery","Crime"]},
-      {t:"Bengkel Waktu Pak Arata", c:["#7c3aed","#1a0b2e"], ch:"CH.41", views:"600k", tag:"Drama", rating:"8.3", status:"Ongoing", author:"Kuroda Isamu", genres:["Drama","Light Fantasy"]},
-    ],
-    Manhua: [
-      {t:"Pewaris Sembilan Pedang", c:["#7a2e9e","#170a26"], ch:"CH.201", views:"5.6m", tag:"Cultivation", rating:"8.9", status:"Ongoing", author:"Chen Yuhao", genres:["Cultivation","Action","Fantasy"]},
-      {t:"Akademi Naga Terakhir", c:["#5b2a8c","#1c0e2e"], ch:"CH.44", views:"720k", tag:"Fantasy", rating:"8.0", status:"Ongoing", author:"Lin Xueqing", genres:["Fantasy","School","Action"]},
-      {t:"Kedai Teh Roh", c:["#8455d6","#1f0f33"], ch:"CH.15", views:"305k", tag:"Slice of Life", rating:"8.2", status:"Completed", author:"Lin Xueqing", genres:["Slice of Life","Supernatural"]},
-      {t:"Menara Seribu Lantai", c:["#6d28d9","#180b2b"], ch:"CH.63", views:"1.8m", tag:"Action", rating:"8.6", status:"Ongoing", author:"Chen Yuhao", genres:["Action","Fantasy","Survival"]},
-      {t:"Pedang Naga Langit", c:["#7a2e9e","#170a26"], ch:"CH.118", views:"2.9m", tag:"Cultivation", rating:"9.0", status:"Ongoing", author:"Wu Baoshan", genres:["Cultivation","Action"]},
-      {t:"Klan Rubah Sembilan Ekor", c:["#6b2fa0","#190b2b"], ch:"CH.52", views:"1.0m", tag:"Fantasy", rating:"8.1", status:"Ongoing", author:"Wu Baoshan", genres:["Fantasy","Supernatural","Romance"]},
-    ]
-  };
+  const titles = { Manhwa: [], Manga: [], Manhua: [] };
 
   function mapRowToItem(row){
     return {
@@ -906,6 +894,8 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
       status: row.status,
       author: row.author,
       genres: row.genres || [],
+      isRecommended: !!row.is_recommended,
+      isPopular: !!row.is_popular,
       isCustom: true
     };
   }
@@ -924,7 +914,15 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
     return mapRowToItem(data);
   }
 
+  async function updateTitleRemote(id, fields){
+    const { data, error } = await sb.from('titles').update(fields).eq('id', id).select().single();
+    if(error) throw error;
+    return mapRowToItem(data);
+  }
+
   async function deleteTitleRemote(id){
+    const c = await sb.from('chapters').delete().eq('title_id', id);
+    if(c.error) throw c.error;
     const { error } = await sb.from('titles').delete().eq('id', id);
     if(error) throw error;
   }
@@ -952,10 +950,12 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
   }
 
   function selectGenre(genre){
+    const rec = titles[genre].filter(it=>it.isRecommended);
+    const upd = [...titles[genre]].reverse();
     document.getElementById('recRow').innerHTML =
-      titles[genre].map((it,i)=>cardHTML(it, i===0)).join('');
+      rec.map((it,i)=>cardHTML(it, i===0)).join('') || `<div class="empty-note">Belum ada rekomendasi di ${genre}.</div>`;
     document.getElementById('updateGrid').innerHTML =
-      titles[genre].map(it=>cardHTML(it,false)).join('');
+      upd.map(it=>cardHTML(it,false)).join('') || `<div class="empty-note">Belum ada judul di ${genre}.</div>`;
     renderPopuler(genre);
   }
 
@@ -963,19 +963,11 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
     let progress = {};
     try{
       const raw = localStorage.getItem('henka_progress');
-      progress = raw ? JSON.parse(raw) : null;
-    }catch(e){ progress = null; }
-    if(!progress){
-      progress = {
-        "Bayangan Sang Penempa": 64,
-        "Klub Dansa Malam": 30,
-        "Pewaris Sembilan Pedang": 88
-      };
-      try{ localStorage.setItem('henka_progress', JSON.stringify(progress)); }catch(e){}
-    }
-    const all = allTitles();
+      progress = raw ? JSON.parse(raw) : {};
+    }catch(e){ progress = {}; }
     const html = Object.keys(progress).map(name=>{
-      const item = all.find(x=>x.t===name) || all[0];
+      const item = allTitles().find(x=>x.t===name);
+      if(!item) return '';
       const pct = progress[name];
       return `
         <div class="card" data-title="${item.t}">
@@ -988,7 +980,8 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
           <div class="card-meta"><span>${pct}% selesai</span></div>
         </div>`;
     }).join('');
-    document.getElementById('continueRow').innerHTML = html;
+    document.getElementById('continueRow').innerHTML =
+      html || `<div class="empty-note">Belum ada riwayat baca.</div>`;
   }
 
   function allTitles(){ return [...titles.Manhwa, ...titles.Manga, ...titles.Manhua]; }
@@ -1003,8 +996,9 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
   }
 
   function renderPopuler(genre){
-    const top = [...titles[genre]].sort((a,b)=>parseViews(b.views)-parseViews(a.views));
-    document.getElementById('populerRow').innerHTML = top.map(item=>cardHTML(item,false)).join('');
+    const pop = titles[genre].filter(it=>it.isPopular);
+    document.getElementById('populerRow').innerHTML =
+      pop.map(item=>cardHTML(item,false)).join('') || `<div class="empty-note">Belum ada judul populer di ${genre}.</div>`;
   }
 
   function buildSynopsis(item){
@@ -1027,7 +1021,7 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
       list.push({ num: total - i, date: dateCycle[Math.min(i, dateCycle.length-1)] });
     }
     return list;
-}
+    }
 
   async function buildChaptersRemote(item){
     const { data, error } = await sb
@@ -1055,16 +1049,38 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
     if(row && currentDetailTitle){ openReader(currentDetailTitle, row.dataset.num); }
   });
 
+  function bookmarkKey(){ return currentUser ? 'henka_bookmarks_' + currentUser.id : null; }
   function getBookmarks(){
+    const key = bookmarkKey();
+    if(!key) return {};
     try{
-      const raw = localStorage.getItem('henka_bookmarks');
+      const raw = localStorage.getItem(key);
       return raw ? JSON.parse(raw) : {};
     }catch(e){ return {}; }
   }
   function setBookmark(title, on){
+    const key = bookmarkKey();
+    if(!key) return;
     const bm = getBookmarks();
     if(on) bm[title] = true; else delete bm[title];
-    try{ localStorage.setItem('henka_bookmarks', JSON.stringify(bm)); }catch(e){}
+    try{ localStorage.setItem(key, JSON.stringify(bm)); }catch(e){}
+  }
+
+  let toastTimer = null;
+  function showLoginToast(msg){
+    let t = document.getElementById('appToast');
+    if(!t){
+      t = document.createElement('div');
+      t.id = 'appToast';
+      t.className = 'app-toast';
+      t.innerHTML = '<span></span><button type="button">Masuk</button>';
+      t.querySelector('button').addEventListener('click', signInWithGoogle);
+      document.body.appendChild(t);
+    }
+    t.querySelector('span').textContent = msg;
+    t.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=>{ t.hidden = true; }, 5000);
   }
 
   async function openDetail(title){
@@ -1120,6 +1136,7 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
     document.querySelector('main').style.display = 'none';
     document.getElementById('riwayatView').hidden = true;
     document.getElementById('koleksiView').hidden = true;
+    document.getElementById('seeAllView').hidden = true;
     document.getElementById('profileView').hidden = true;
     document.getElementById('searchView').hidden = true;
     document.getElementById('readerView').hidden = true;
@@ -1136,9 +1153,10 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
     document.body.classList.remove('no-nav-pad');
     if(detailOrigin === 'riwayat'){ showRiwayat(); }
     else if(detailOrigin === 'koleksi'){ showKoleksi(); }
+    else if(detailOrigin === 'seeall' && seeAllState){ showSeeAll(seeAllState.kind, seeAllState.genre); }
     else if(detailOrigin === 'profile'){ showProfile(); }
     else { showHome(); }
-      }
+    }
 
   document.addEventListener('click', e=>{
     const card = e.target.closest('.card, .history-card');
@@ -1148,6 +1166,19 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
   document.getElementById('detailBack').addEventListener('click', closeDetail);
 
   function renderKoleksi(){
+    const wrap0 = document.getElementById('koleksiWrap');
+    if(!isLinked()){
+      wrap0.innerHTML = `
+        <div class="link-banner">
+          <div class="l-icon">${svgIcon('link')}</div>
+          <div class="link-banner-text">
+            <strong>Koleksi butuh akun Google</strong>
+            <p>Masuk dengan akun Google untuk menyimpan judul favorit ke Koleksi dan membukanya lagi kapan saja.</p>
+            <button class="link-btn" data-action="link">Masuk dengan Google</button>
+          </div>
+        </div>`;
+      return;
+    }
     const bm = getBookmarks();
     const saved = Object.keys(bm).map(findItem).filter(Boolean);
     const wrap = document.getElementById('koleksiWrap');
@@ -1167,11 +1198,40 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
     document.querySelector('main').style.display = 'none';
     document.getElementById('riwayatView').hidden = true;
     document.getElementById('koleksiView').hidden = true;
+    document.getElementById('seeAllView').hidden = true;
     document.getElementById('profileView').hidden = true;
     document.getElementById('searchView').hidden = true;
     document.getElementById('adminView').hidden = true;
     document.getElementById('readerView').hidden = true;
   }
+
+  let seeAllState = null;
+
+  function showSeeAll(kind, genre){
+    genre = genre || document.querySelector('#genreTabs .tab.active')?.dataset.genre || 'Manhwa';
+    seeAllState = { kind, genre };
+    let list = titles[genre].filter(it=>it.isRecommended);
+    let label = 'Rekomendasi';
+    if(kind === 'update'){ list = [...titles[genre]].reverse(); label = 'Update'; }
+    if(kind === 'populer'){ list = titles[genre].filter(it=>it.isPopular); label = 'Populer'; }
+    document.getElementById('seeAllTitle').textContent = `${label} · ${genre}`;
+    document.getElementById('seeAllWrap').innerHTML = list.length
+      ? `<div class="grid">${list.map(it=>cardHTML(it,false)).join('')}</div>`
+      : `<div class="koleksi-empty">Belum ada judul di ${genre}.</div>`;
+    hideAllTabs();
+    document.getElementById('seeAllView').hidden = false;
+    activeTab = 'seeall';
+    setActiveNav('navHome');
+    window.scrollTo(0,0);
+  }
+
+  document.addEventListener('click', e=>{
+    const link = e.target.closest('[data-seeall]');
+    if(!link) return;
+    e.preventDefault();
+    showSeeAll(link.dataset.seeall);
+  });
+  document.getElementById('seeAllBack').addEventListener('click', showHome);
 
   function showHome(){
     hideAllTabs();
@@ -1201,7 +1261,12 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
 
   let currentUser = null;
 
+  const ADMIN_EMAIL = 'adminhenka@gmail.com';
+
   function isLinked(){ return !!currentUser; }
+  function isAdmin(){
+    return !!currentUser && (currentUser.email || '').toLowerCase() === ADMIN_EMAIL;
+  }
 
   async function refreshAuthState(){
     const { data: { session } } = await sb.auth.getSession();
@@ -1214,6 +1279,7 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
     if(document.getElementById('profileView') && !document.getElementById('profileView').hidden){
       renderProfile();
     }
+    if(!document.getElementById('koleksiView').hidden){ renderKoleksi(); }
   });
 
   async function signInWithGoogle(){
@@ -1221,7 +1287,7 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
       provider: 'google',
       options: { redirectTo: window.location.origin }
     });
-  }
+    }
 
   async function signOutUser(){
     await sb.auth.signOut();
@@ -1278,7 +1344,7 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
           <div><div class="num">14</div><div class="plabel">Hari Beruntun</div></div>
         </div>
         <div class="profile-menu">
-          ${menuItem('admin','Panel Admin',{action:'admin'})}
+          ${isAdmin() ? menuItem('admin','Panel Admin',{action:'admin'}) : ''}
           ${menuItem('edit','Edit Profil')}
           ${menuItem('bell','Notifikasi')}
           ${menuItem('settings','Pengaturan')}
@@ -1302,15 +1368,14 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
           </div>
         </div>
         <div class="profile-menu">
-          ${menuItem('admin','Panel Admin',{locked:true})}
           ${menuItem('settings','Pengaturan')}
           ${menuItem('help','Bantuan & Dukungan')}
           ${menuItem('info','Tentang Aplikasi')}
           ${menuItem('bell','Sinkronisasi Cloud',{locked:true})}
           ${menuItem('bell','Lencana & Pencapaian',{locked:true})}
         </div>`;
-    }
   }
+    }
 
   document.getElementById('profileView').addEventListener('click', e=>{
     const btn = e.target.closest('[data-action]');
@@ -1341,7 +1406,7 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
     });
     const wrap = document.getElementById('adminItemList');
     if(items.length === 0){
-      wrap.innerHTML = `<div class="admin-empty">Belum ada judul yang kamu tambahkan.</div>`;
+      wrap.innerHTML = `<div class="admin-empty">Belum ada judul. Tambahkan lewat form di atas.</div>`;
       return;
     }
     wrap.innerHTML = items.map(({cat, it})=>`
@@ -1351,7 +1416,12 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
           <div class="a-title">${it.t}</div>
           <div class="a-sub">${cat} · ${it.genres.join(', ')} · ${it.ch}</div>
         </div>
-        <button type="button" class="a-delete" data-cat="${cat}" data-id="${it.supabaseId}">Hapus</button>
+        <div class="a-actions" data-cat="${cat}" data-id="${it.supabaseId}">
+          <button type="button" class="a-flag ${it.isRecommended ? 'on' : ''}" data-flag="rec">${it.isRecommended ? '✓ ' : ''}Rekomendasi</button>
+          <button type="button" class="a-flag ${it.isPopular ? 'on' : ''}" data-flag="pop">${it.isPopular ? '✓ ' : ''}Populer</button>
+          <button type="button" class="a-edit">Edit</button>
+          <button type="button" class="a-delete">Hapus</button>
+        </div>
       </div>`).join('');
   }
 
@@ -1380,7 +1450,7 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
-  }
+    }
 
   async function listChapterImageEntries(){
     const dbTitles = allTitles().filter(it=>it.supabaseId);
@@ -1423,7 +1493,7 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
         </div>
         <button type="button" class="a-delete" data-del-title-id="${en.titleId}" data-del-num="${en.num}">Hapus</button>
       </div>`).join('');
-      }
+  }
 
   document.getElementById('chapterImageForm').addEventListener('submit', async e=>{
     e.preventDefault();
@@ -1491,8 +1561,8 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
     } else {
       pagesWrap.hidden = true;
       emptyMsg.hidden = false;
-    }
   }
+    }
 
   document.getElementById('readerBack').addEventListener('click', ()=>{
     document.getElementById('readerView').hidden = true;
@@ -1501,6 +1571,7 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
   });
 
   function showAdmin(){
+    if(!isAdmin()) return;
     renderAdminList();
     populateAdminTitleSelect();
     renderChapterImageList();
@@ -1519,8 +1590,52 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
     showProfile();
   });
 
+  let editingItem = null;
+
+  function refreshHomeLists(){
+    const activeGenre = document.querySelector('#genreTabs .tab.active')?.dataset.genre || 'Manhwa';
+    selectGenre(activeGenre);
+  }
+
+  function resetEditState(){
+    editingItem = null;
+    document.getElementById('admSubmitBtn').textContent = 'Tambah Judul';
+    document.getElementById('admCancelEdit').hidden = true;
+  }
+
+  function startEdit(cat, id){
+    const it = titles[cat].find(x=>x.supabaseId === id);
+    if(!it) return;
+    editingItem = { cat, id };
+    document.getElementById('admTitle').value = it.t;
+    document.getElementById('admCoverFile').value = '';
+    document.getElementById('admCategory').value = cat;
+    document.getElementById('admStatus').value = it.status;
+    document.getElementById('admGenre').value = it.genres[0] || it.tag || '';
+    document.getElementById('admGenresExtra').value = it.genres.slice(1).join(', ');
+    document.getElementById('admAuthor').value = it.author || '';
+    document.getElementById('admRating').value = it.rating;
+    document.getElementById('admChapters').value = parseInt(String(it.ch).replace(/\D/g,'')) || 1;
+    document.getElementById('admViews').value = it.views === '0' ? '' : it.views;
+    document.getElementById('admRecommended').checked = !!it.isRecommended;
+    document.getElementById('admPopular').checked = !!it.isPopular;
+    document.getElementById('admSubmitBtn').textContent = 'Simpan Perubahan';
+    document.getElementById('admCancelEdit').hidden = false;
+    const toast = document.getElementById('adminToast');
+    toast.textContent = `Mengedit "${it.t}". Cover lama dipakai kalau kamu tidak memilih gambar baru.`;
+    toast.hidden = false;
+    window.scrollTo(0,0);
+  }
+
+  document.getElementById('admCancelEdit').addEventListener('click', ()=>{
+    document.getElementById('adminForm').reset();
+    resetEditState();
+    document.getElementById('adminToast').hidden = true;
+  });
+
   document.getElementById('adminForm').addEventListener('submit', async e=>{
     e.preventDefault();
+    if(!isAdmin()) return;
     const category = document.getElementById('admCategory').value;
     const title = document.getElementById('admTitle').value.trim();
     const coverFile = document.getElementById('admCoverFile').files[0] || null;
@@ -1532,6 +1647,8 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
     const status = document.getElementById('admStatus').value;
     const chapters = document.getElementById('admChapters').value;
     const views = document.getElementById('admViews').value.trim() || '0';
+    const isRec = document.getElementById('admRecommended').checked;
+    const isPop = document.getElementById('admPopular').checked;
 
     if(!title || !mainGenre || !author || !chapters){ return; }
 
@@ -1544,34 +1661,91 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
       if(coverFile){
         coverUrl = await uploadImage(coverFile, 'covers');
       }
-      const palette = coverPalette[titles[category].length % coverPalette.length];
-      const newItem = await insertTitle(category, {
+      const fields = {
         category,
         title,
-        cover_url: coverUrl,
-        color_1: palette[0],
-        color_2: palette[1],
         chapter_count: Number(chapters),
         views,
         tag: mainGenre,
         rating: Number(rating),
         status,
         author,
-        genres: [mainGenre, ...extra]
-      });
-      titles[category].push(newItem);
+        genres: [mainGenre, ...extra],
+        is_recommended: isRec,
+        is_popular: isPop
+      };
+
+      if(editingItem){
+        if(coverUrl) fields.cover_url = coverUrl;
+        const updated = await updateTitleRemote(editingItem.id, fields);
+        const oldList = titles[editingItem.cat];
+        const idx = oldList.findIndex(x=>x.supabaseId === editingItem.id);
+        if(editingItem.cat === category){
+          oldList[idx] = updated;
+        } else {
+          oldList.splice(idx,1);
+          titles[category].push(updated);
+        }
+        toast.textContent = `"${title}" berhasil diperbarui.`;
+        e.target.reset();
+        resetEditState();
+      } else {
+        const palette = coverPalette[titles[category].length % coverPalette.length];
+        fields.cover_url = coverUrl;
+        fields.color_1 = palette[0];
+        fields.color_2 = palette[1];
+        const newItem = await insertTitle(category, fields);
+        titles[category].push(newItem);
+        toast.textContent = `"${title}" berhasil ditambahkan ke ${category}.`;
+        e.target.reset();
+      }
       renderAdminList();
       populateAdminTitleSelect();
-      e.target.reset();
-
-      const activeGenre = document.querySelector('#genreTabs .tab.active')?.dataset.genre || 'Manhwa';
-      selectGenre(activeGenre);
-
-      toast.textContent = `"${title}" berhasil ditambahkan ke ${category}.`;
+      refreshHomeLists();
     }catch(err){
       toast.textContent = 'Gagal menyimpan: ' + err.message;
     }
     toast.hidden = false;
+    });
+
+  document.getElementById('adminItemList').addEventListener('click', async e=>{
+    const actions = e.target.closest('.a-actions');
+    if(!actions || !isAdmin()) return;
+    const cat = actions.dataset.cat;
+    const id = actions.dataset.id;
+    const item = titles[cat].find(x=>x.supabaseId === id);
+    if(!item) return;
+    const toast = document.getElementById('adminToast');
+
+    if(e.target.closest('.a-edit')){ startEdit(cat, id); return; }
+
+    try{
+      if(e.target.closest('.a-delete')){
+        if(!confirm(`Hapus "${item.t}" beserta semua chapternya? Ini tidak bisa dibatalkan.`)) return;
+        await deleteTitleRemote(id);
+        titles[cat] = titles[cat].filter(it=>it.supabaseId !== id);
+        if(editingItem && editingItem.id === id){ document.getElementById('adminForm').reset(); resetEditState(); }
+        toast.textContent = `"${item.t}" dihapus.`;
+        toast.hidden = false;
+      }
+      const flagBtn = e.target.closest('.a-flag');
+      if(flagBtn){
+        const isRec = flagBtn.dataset.flag === 'rec';
+        const field = isRec ? 'is_recommended' : 'is_popular';
+        const nowOn = !(isRec ? item.isRecommended : item.isPopular);
+        const updated = await updateTitleRemote(id, { [field]: nowOn });
+        const idx = titles[cat].findIndex(x=>x.supabaseId === id);
+        titles[cat][idx] = updated;
+        toast.textContent = `"${item.t}" ${nowOn ? 'ditambahkan ke' : 'dikeluarkan dari'} ${isRec ? 'Rekomendasi' : 'Populer'}.`;
+        toast.hidden = false;
+      }
+      renderAdminList();
+      populateAdminTitleSelect();
+      refreshHomeLists();
+    }catch(err){
+      toast.textContent = 'Gagal: ' + err.message;
+      toast.hidden = false;
+    }
   });
 
   const genreList = [
@@ -1634,7 +1808,7 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
     const g = chip.dataset.genre;
     if(selectedFilters.has(g)){ selectedFilters.delete(g); } else { selectedFilters.add(g); }
     chip.classList.toggle('active');
-  });
+    });
 
   document.getElementById('filterReset').addEventListener('click', ()=>{
     selectedFilters.clear();
@@ -1729,8 +1903,8 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
       el.style.backgroundPosition = 'center';
     } else {
       el.style.backgroundImage = '';
-    }
-  }
+}
+}
 
   document.getElementById('headerAvatar').addEventListener('click', showProfile);
   document.getElementById('continueSeeAll').addEventListener('click', e=>{
@@ -1738,7 +1912,15 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
     showRiwayat();
   });
 
+  document.getElementById('koleksiWrap').addEventListener('click', e=>{
+    if(e.target.closest('[data-action="link"]')) signInWithGoogle();
+  });
+
   document.getElementById('detailBookmarkBtn').addEventListener('click', function(){
+    if(!isLinked()){
+      showLoginToast('Masuk dengan Google dulu untuk memakai Koleksi.');
+      return;
+    }
     const title = this.dataset.title;
     const nowOn = !this.classList.contains('active');
     this.classList.toggle('active', nowOn);
@@ -1766,13 +1948,7 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
     }
   });
 
-  const historyData = [
-    { date:"13 Sep 2026", time:"13:39", title:"Bayangan Sang Penempa", read:88 },
-    { date:"12 Sep 2026", time:"07:56", title:"Klub Dansa Malam", read:52 },
-    { date:"09 Sep 2026", time:"07:21", title:"Pewaris Sembilan Pedang", read:120 },
-    { date:"09 Sep 2026", time:"06:34", title:"Kontrak dengan Iblis Es", read:41 },
-    { date:"09 Sep 2026", time:"06:02", title:"Akademi Naga Terakhir", read:29 },
-  ];
+  const historyData = [];
 
   function renderHistory(){
     const groups = [];
@@ -1782,6 +1958,11 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
       g.items.push(h);
     });
 
+    if(groups.length === 0){
+      document.getElementById('historyWrap').innerHTML =
+        `<div class="koleksi-empty">Belum ada riwayat baca.</div>`;
+      return;
+    }
     document.getElementById('historyWrap').innerHTML = groups.map(g=>{
       const cards = g.items.map(h=>{
         const item = findItem(h.title);
@@ -1811,6 +1992,14 @@ Sav53WrphrCZoFvI6/thbCNuLcRN+qNftK2REvru6ziJs293mDcSjPHNqCWlHciVQmhK6CiTyn1CKQ2K
         </div>`;
     }).join('');
   }
+
+  document.getElementById('genreTabs').addEventListener('click', e=>{
+    const btn = e.target.closest('.tab');
+    if(!btn) return;
+    document.querySelectorAll('#genreTabs .tab').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    selectGenre(btn.dataset.genre);
+}
 
   document.getElementById('genreTabs').addEventListener('click', e=>{
     const btn = e.target.closest('.tab');
