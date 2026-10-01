@@ -560,16 +560,79 @@
   }
 
   /* Reader */
-  .reader-view{ background:#000; min-height:100vh; }
-  .reader-top{
-    display:flex; align-items:center; gap:12px; padding:14px 16px;
-    position:sticky; top:0; background:rgba(0,0,0,0.88);
-    backdrop-filter: blur(6px); z-index:5;
-  }
-  .reader-title{ color:#fff; font-weight:700; font-size:0.9rem; }
-  .reader-chapter{ color:rgba(255,255,255,0.6); font-size:0.76rem; margin-top:1px; }
+  .reader-view{ background: var(--reader-bg, #000); min-height:100vh; }
   .reader-pages img{ width:100%; display:block; }
-  .reader-empty{ color: var(--text-faint); text-align:center; padding:70px 30px; line-height:1.7; }
+  .reader-empty{ color:#9b9ba6; text-align:center; padding:120px 30px 160px; line-height:1.7; }
+  .reader-bar{
+    position:fixed; z-index:50; background:rgba(34,34,40,0.96); color:#e8e8ee;
+    border:1px solid rgba(255,255,255,0.06); box-shadow:0 14px 36px -8px rgba(0,0,0,0.75);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    transition: transform .22s ease, opacity .22s ease;
+  }
+  .reader-bar-top{
+    top:calc(12px + env(safe-area-inset-top, 0px)); left:14px; right:14px;
+    border-radius:24px; display:flex; align-items:center; gap:6px; padding:10px 12px;
+  }
+  .reader-bar-bottom{
+    left:0; right:0; margin:0 auto; width:min(88%, 470px);
+    bottom:calc(18px + env(safe-area-inset-bottom, 0px));
+    border-radius:34px; display:flex; justify-content:space-between; align-items:center; padding:10px 14px;
+  }
+  .rb-btn, .rb-ico{
+    background:none; border:none; color:#cfcfd8; width:42px; height:42px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .rb-btn svg, .rb-ico svg{ width:23px; height:23px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .rb-ico[disabled]{ opacity:0.28; }
+  .rb-ico.on{ color:#9b6bff; }
+  .rb-ico.heart.on{ color:#ff4f74; }
+  .rb-ico.heart.on svg{ fill:#ff4f74; }
+  .reader-headline{ flex:1; min-width:0; display:flex; align-items:baseline; gap:8px; white-space:nowrap; }
+  .reader-title{ min-width:0; overflow:hidden; text-overflow:ellipsis; font-weight:600; font-size:1rem; color:#f1f1f5; }
+  .reader-dot{ color:#6f6f7a; font-size:0.7rem; flex-shrink:0; }
+  .reader-chapter{ color:#a4a4b0; font-size:1rem; flex-shrink:0; }
+  .reader-side{
+    position:fixed; z-index:49; right:16px; bottom:calc(122px + env(safe-area-inset-bottom, 0px));
+    display:flex; flex-direction:column; gap:12px; transition: transform .22s ease, opacity .22s ease;
+  }
+  .rs-circle{
+    width:54px; height:54px; border-radius:50%; border:1px solid rgba(255,255,255,0.06);
+    background:rgba(52,52,60,0.95); color:#cfcfd8; display:flex; align-items:center; justify-content:center;
+    box-shadow:0 10px 26px -8px rgba(0,0,0,0.7);
+  }
+  .rs-circle svg{ width:24px; height:24px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .reader-view.ui-hidden .reader-bar-top{ transform:translateY(-140%); opacity:0; pointer-events:none; }
+  .reader-view.ui-hidden .reader-bar-bottom{ transform:translateY(160%); opacity:0; pointer-events:none; }
+  .reader-view.ui-hidden .reader-side{ transform:translateX(150%); opacity:0; pointer-events:none; }
+  .reader-end{ padding:34px 20px 150px; text-align:center; color:#a4a4b0; font-size:0.9rem; display:flex; flex-direction:column; gap:12px; background:#0d0d10; }
+  .reader-end[hidden]{ display:none; }
+  .reader-end button{
+    padding:14px; border-radius:999px; border:1px solid rgba(255,255,255,0.12);
+    background:rgba(52,52,60,0.95); color:#f1f1f5; font-weight:700; font-size:0.92rem;
+  }
+  .reader-end button.primary{ background:#9b6bff; border-color:transparent; color:#fff; }
+  .reader-sheet-backdrop{ position:fixed; inset:0; z-index:60; background:rgba(0,0,0,0.55); display:flex; align-items:flex-end; }
+  .reader-sheet-backdrop[hidden]{ display:none; }
+  .reader-sheet{
+    width:100%; max-height:72vh; overflow:auto; background:#1c1c22; color:#eee;
+    border-radius:22px 22px 0 0; padding:18px 18px calc(26px + env(safe-area-inset-bottom, 0px));
+  }
+  .reader-sheet h4{ margin:0 0 14px; font-size:1.05rem; font-weight:800; }
+  .rs-label{ font-size:0.76rem; color:#a4a4b0; font-weight:700; margin:16px 0 8px; }
+  .rs-seg{ display:flex; gap:8px; }
+  .rs-seg button{
+    flex:1; padding:11px 0; border-radius:12px; border:1px solid rgba(255,255,255,0.1);
+    background:#26262d; color:#cfcfd8; font-weight:700; font-size:0.86rem;
+  }
+  .rs-seg button.on{ background:#9b6bff; border-color:transparent; color:#fff; }
+  .rs-chapter{
+    display:flex; justify-content:space-between; padding:13px 6px; border-top:1px solid rgba(255,255,255,0.07);
+    font-size:0.92rem; font-weight:600;
+  }
+  .rs-chapter.current{ color:#9b6bff; }
+  .rs-chapter small{ color:#7d7d89; font-weight:500; }
+  .reader-view:not([hidden]) ~ .app-toast{ bottom:122px; z-index:70; }
+  body:has(.reader-view:not([hidden])) > header{ display:none; }
 
   nav.bottom{
     position:fixed; bottom:0; left:0; right:0;
@@ -901,15 +964,37 @@
 </div>
 
 <div class="reader-view" id="readerView" hidden>
-  <div class="reader-top">
-    <button class="circle-btn" id="readerBack" aria-label="Kembali"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg></button>
-    <div>
-      <div class="reader-title" id="readerTitle"></div>
-      <div class="reader-chapter" id="readerChapterLabel"></div>
+  <div class="reader-bar reader-bar-top" id="readerTop">
+    <button class="rb-btn" id="readerBack" aria-label="Kembali"><svg viewBox="0 0 24 24"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg></button>
+    <div class="reader-headline">
+      <span class="reader-title" id="readerTitle"></span>
+      <span class="reader-dot">●</span>
+      <span class="reader-chapter" id="readerChapterLabel"></span>
     </div>
+    <button class="rb-btn" id="readerHome" aria-label="Beranda"><svg viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/></svg></button>
   </div>
+
   <div class="reader-pages" id="readerPages"></div>
-  <div class="reader-empty" id="readerEmpty" hidden>Belum ada gambar untuk chapter ini.<br>Tambahkan lewat Panel Admin → Tambah Halaman Chapter.</div>
+  <div class="reader-empty" id="readerEmpty" hidden>Belum ada gambar untuk chapter ini.<br>Tambahkan lewat Panel Admin → Chapter.</div>
+  <div class="reader-end" id="readerEnd" hidden></div>
+
+  <div class="reader-side" id="readerSide">
+    <button class="rs-circle" id="readerUp" aria-label="Gulir ke atas"><svg viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg></button>
+    <button class="rs-circle" id="readerDown" aria-label="Gulir ke bawah"><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></button>
+  </div>
+
+  <div class="reader-bar reader-bar-bottom" id="readerBottom">
+    <button class="rb-ico" id="readerPrev" aria-label="Chapter sebelumnya"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <button class="rb-ico" id="readerSettings" aria-label="Pengaturan"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+    <button class="rb-ico" id="readerPlay" aria-label="Auto-scroll"><svg viewBox="0 0 24 24"><polygon points="7 4 20 12 7 20 7 4"/></svg></button>
+    <button class="rb-ico" id="readerList" aria-label="Daftar chapter"><svg viewBox="0 0 24 24"><line x1="9" y1="6" x2="21" y2="6"/><line x1="9" y1="12" x2="21" y2="12"/><line x1="9" y1="18" x2="21" y2="18"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg></button>
+    <button class="rb-ico heart" id="readerHeart" aria-label="Koleksi"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+    <button class="rb-ico" id="readerNext" aria-label="Chapter berikutnya"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button>
+  </div>
+
+  <div class="reader-sheet-backdrop" id="readerSheet" hidden>
+    <div class="reader-sheet" id="readerSheetBody"></div>
+  </div>
 </div>
 
 <nav class="bottom">
@@ -1475,6 +1560,11 @@
     chapterAscending = false;
     document.getElementById('sortToggle').textContent = '↓ Terbaru';
     renderChapterList();
+    {
+      const hh = item.supabaseId ? lib.h[String(item.supabaseId)] : null;
+      document.getElementById('detailReadBtn').textContent =
+        (hh && currentChapters.some(c=>Number(c.num) === Number(hh.read))) ? 'Lanjutkan Ch. ' + hh.read : 'Baca Sekarang';
+    }
 
     detailOrigin = activeTab;
     document.querySelector('main').style.display = 'none';
@@ -1961,39 +2051,234 @@
     renderChapterImageList();
   });
 
+  // ===== Pembaca chapter =====
+  const READER_PREF_KEY = 'henka_reader';
+  const READER_SPEEDS = { slow:45, mid:95, fast:170 };
+  const READER_BGS = { black:'#000', gray:'#1b1b1f', white:'#fff' };
+  let readerPref = { speed:'mid', bg:'black' };
+  try{ Object.assign(readerPref, JSON.parse(localStorage.getItem(READER_PREF_KEY) || '{}')); }catch(e){}
+  let readerNum = null;
+
+  const ICON_PLAY = '<svg viewBox=\"0 0 24 24\"><polygon points=\"7 4 20 12 7 20 7 4\"/></svg>';
+  const ICON_PAUSE = '<svg viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+
+  function applyReaderPref(){
+    document.getElementById('readerView').style.setProperty('--reader-bg', READER_BGS[readerPref.bg] || '#000');
+    try{ localStorage.setItem(READER_PREF_KEY, JSON.stringify(readerPref)); }catch(e){}
+  }
+
+  function readerNums(){
+    return currentChapters.map(c=>Number(c.num)).filter(n=>!isNaN(n)).sort((a,b)=>a-b);
+  }
+  function readerNeighbors(){
+    const nums = readerNums();
+    const i = nums.indexOf(Number(readerNum));
+    return { prev: i > 0 ? nums[i-1] : null, next: (i >= 0 && i < nums.length - 1) ? nums[i+1] : null };
+  }
+
+  function setReaderUI(visible){
+    document.getElementById('readerView').classList.toggle('ui-hidden', !visible);
+  }
+
+  function paintReaderHeart(){
+    const on = !!getBookmarks()[currentDetailTitle];
+    document.getElementById('readerHeart').classList.toggle('on', on);
+  }
+  function paintReaderNav(){
+    const n = readerNeighbors();
+    document.getElementById('readerPrev').disabled = n.prev === null;
+    document.getElementById('readerNext').disabled = n.next === null;
+    const end = document.getElementById('readerEnd');
+    const parts = [];
+    if(n.next !== null) parts.push(`<button type="button" class="primary" data-go="${n.next}">Chapter ${n.next} ›</button>`);
+    else parts.push(`<span>Kamu sudah di chapter terakhir.</span>`);
+    if(n.prev !== null) parts.push(`<button type="button" data-go="${n.prev}">‹ Chapter ${n.prev}</button>`);
+    parts.push(`<button type="button" data-go="detail">Kembali ke detail</button>`);
+    end.innerHTML = parts.join('');
+  }
+
+  // --- auto-scroll ---
+  let autoOn = false, autoRaf = null, autoLast = 0, autoAcc = 0;
+  function paintPlay(){
+    const b = document.getElementById('readerPlay');
+    b.innerHTML = autoOn ? ICON_PAUSE : ICON_PLAY;
+    b.classList.toggle('on', autoOn);
+  }
+  function autoTick(ts){
+    if(!autoOn) return;
+    if(document.getElementById('readerView').hidden){ stopAutoScroll(); return; }
+    if(!autoLast) autoLast = ts;
+    const dt = (ts - autoLast) / 1000;
+    autoLast = ts;
+    autoAcc += (READER_SPEEDS[readerPref.speed] || 95) * dt;
+    const step = Math.floor(autoAcc);
+    if(step >= 1){ window.scrollBy(0, step); autoAcc -= step; }
+    if(window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2){
+      stopAutoScroll(); setReaderUI(true); return;
+    }
+    autoRaf = requestAnimationFrame(autoTick);
+  }
+  function startAutoScroll(){
+    autoOn = true; autoLast = 0; autoAcc = 0;
+    paintPlay();
+    setReaderUI(false);
+    autoRaf = requestAnimationFrame(autoTick);
+  }
+  function stopAutoScroll(){
+    autoOn = false;
+    cancelAnimationFrame(autoRaf);
+    paintPlay();
+  }
+  ['touchstart','wheel','keydown'].forEach(ev=>window.addEventListener(ev, e=>{
+    if(!autoOn) return;
+    if(e.target && e.target.closest && e.target.closest('.reader-bar, .reader-side, .reader-sheet-backdrop')) return;
+    stopAutoScroll();
+  }, { passive:true }));
+
+  // --- tampil/sembunyi bar saat gulir ---
+  let lastY = 0, ticking = false;
+  window.addEventListener('scroll', ()=>{
+    if(ticking) return;
+    ticking = true;
+    requestAnimationFrame(()=>{
+      ticking = false;
+      if(document.getElementById('readerView').hidden) return;
+      const y = window.scrollY, dy = y - lastY;
+      if(autoOn){ lastY = y; return; }
+      if(dy > 14 && y > 80){ setReaderUI(false); lastY = y; }
+      else if(dy < -14){ setReaderUI(true); lastY = y; }
+      else if(Math.abs(dy) > 60){ lastY = y; }
+    });
+  }, { passive:true });
+
+  document.getElementById('readerPages').addEventListener('click', ()=>{
+    setReaderUI(document.getElementById('readerView').classList.contains('ui-hidden'));
+  });
+
+  // --- sheet pengaturan & daftar chapter ---
+  function openReaderSheet(html){
+    document.getElementById('readerSheetBody').innerHTML = html;
+    document.getElementById('readerSheet').hidden = false;
+  }
+  function closeReaderSheet(){ document.getElementById('readerSheet').hidden = true; }
+  document.getElementById('readerSheet').addEventListener('click', e=>{
+    if(e.target.id === 'readerSheet'){ closeReaderSheet(); return; }
+    const seg = e.target.closest('.rs-seg button');
+    if(seg){
+      readerPref[seg.parentElement.dataset.key] = seg.dataset.v;
+      applyReaderPref();
+      seg.parentElement.querySelectorAll('button').forEach(b=>b.classList.toggle('on', b === seg));
+      return;
+    }
+    const row = e.target.closest('.rs-chapter');
+    if(row){ closeReaderSheet(); goReaderChapter(row.dataset.num); }
+  });
+
+  document.getElementById('readerSettings').addEventListener('click', ()=>{
+    const seg = (key, opts)=>`<div class="rs-seg" data-key="${key}">` +
+      opts.map(([v,l])=>`<button type="button" data-v="${v}" class="${readerPref[key] === v ? 'on' : ''}">${l}</button>`).join('') + '</div>';
+    openReaderSheet(`
+      <h4>Pengaturan baca</h4>
+      <div class="rs-label">Kecepatan auto-scroll</div>
+      ${seg('speed', [['slow','Lambat'],['mid','Sedang'],['fast','Cepat']])}
+      <div class="rs-label">Latar belakang</div>
+      ${seg('bg', [['black','Hitam'],['gray','Abu-abu'],['white','Putih']])}`);
+  });
+
+  document.getElementById('readerList').addEventListener('click', ()=>{
+    const rows = [...currentChapters].sort((a,b)=>Number(b.num) - Number(a.num)).map(c=>`
+      <div class="rs-chapter ${Number(c.num) === Number(readerNum) ? 'current' : ''}" data-num="${c.num}">
+        <span>Chapter ${c.num}</span><small>${Number(c.num) === Number(readerNum) ? 'Sedang dibaca' : ''}</small>
+      </div>`).join('');
+    openReaderSheet(`<h4>Daftar chapter</h4>${rows || '<div class="reader-empty" style="padding:30px 0">Belum ada chapter.</div>'}`);
+    const cur = document.querySelector('#readerSheetBody .rs-chapter.current');
+    if(cur) cur.scrollIntoView({ block:'center' });
+  });
+
+  document.getElementById('readerPlay').addEventListener('click', ()=>{
+    if(autoOn) stopAutoScroll(); else startAutoScroll();
+  });
+  document.getElementById('readerPrev').addEventListener('click', ()=>{ const n = readerNeighbors(); if(n.prev !== null) goReaderChapter(n.prev); });
+  document.getElementById('readerNext').addEventListener('click', ()=>{ const n = readerNeighbors(); if(n.next !== null) goReaderChapter(n.next); });
+  document.getElementById('readerUp').addEventListener('click', ()=>{ window.scrollBy({ top: -Math.round(window.innerHeight * 0.85), behavior:'smooth' }); });
+  document.getElementById('readerDown').addEventListener('click', ()=>{ window.scrollBy({ top: Math.round(window.innerHeight * 0.85), behavior:'smooth' }); });
+
+  document.getElementById('readerHeart').addEventListener('click', ()=>{
+    if(!isLinked()){ showLoginToast('Masuk dengan Google dulu untuk memakai Koleksi.'); return; }
+    setBookmark(currentDetailTitle, !getBookmarks()[currentDetailTitle]);
+    paintReaderHeart();
+  });
+
+  document.getElementById('readerEnd').addEventListener('click', e=>{
+    const b = e.target.closest('button');
+    if(!b) return;
+    if(b.dataset.go === 'detail'){ backFromReader(); return; }
+    goReaderChapter(b.dataset.go);
+  });
+
+  function goReaderChapter(num){
+    stopAutoScroll();
+    openReader(currentDetailTitle, num);
+  }
+
   async function openReader(title, num){
     const item = findItem(title);
     currentDetailTitle = title;
+    readerNum = Number(num);
     if(item){ recordHistory(title, num); }
     document.getElementById('readerTitle').textContent = title;
     document.getElementById('readerChapterLabel').textContent = `Chapter ${num}`;
     const pagesWrap = document.getElementById('readerPages');
     const emptyMsg = document.getElementById('readerEmpty');
+    const endBox = document.getElementById('readerEnd');
     pagesWrap.innerHTML = '';
     pagesWrap.hidden = true;
     emptyMsg.hidden = true;
+    endBox.hidden = true;
+
+    applyReaderPref();
+    paintPlay();
+    paintReaderHeart();
+    paintReaderNav();
+    closeReaderSheet();
+    document.getElementById('readerView').classList.remove('ui-hidden');
 
     document.getElementById('detailView').hidden = true;
     document.getElementById('readerView').hidden = false;
     document.querySelector('nav.bottom').style.display = 'none';
     document.body.classList.add('no-nav-pad');
     window.scrollTo(0,0);
+    lastY = 0;
 
     const images = (item && item.supabaseId) ? await getChapterImagesRemote(item, num) : null;
+    if(Number(num) !== readerNum) return;   // pembaca sudah pindah chapter
     if(images && images.length){
-      pagesWrap.innerHTML = images.map(url=>`<img src="${url}" loading="lazy" alt="Halaman ${title} Chapter ${num}">`).join('');
+      pagesWrap.innerHTML = images.map(url=>`<img src="${url}" loading="lazy" decoding="async" alt="Halaman ${title} Chapter ${num}">`).join('');
       pagesWrap.hidden = false;
       emptyMsg.hidden = true;
+      endBox.hidden = false;
     } else {
       pagesWrap.hidden = true;
       emptyMsg.hidden = false;
+      endBox.hidden = false;
     }
   }
 
-  document.getElementById('readerBack').addEventListener('click', ()=>{
+  function backFromReader(){
+    stopAutoScroll();
+    closeReaderSheet();
     document.getElementById('readerView').hidden = true;
     if(currentDetailTitle){ openDetail(currentDetailTitle); }
     else { closeDetail(); }
+  }
+  document.getElementById('readerBack').addEventListener('click', backFromReader);
+
+  document.getElementById('readerHome').addEventListener('click', ()=>{
+    stopAutoScroll();
+    closeReaderSheet();
+    document.getElementById('readerView').hidden = true;
+    detailOrigin = 'home';
+    closeDetail();
   });
 
   function showAdmin(){
@@ -2407,7 +2692,11 @@
 
   document.getElementById('detailReadBtn').addEventListener('click', ()=>{
     if(currentChapters.length && currentDetailTitle){
-      openReader(currentDetailTitle, currentChapters[0].num);
+      const it = findItem(currentDetailTitle);
+      const h = it && it.supabaseId ? lib.h[String(it.supabaseId)] : null;
+      const nums = currentChapters.map(c=>Number(c.num)).sort((a,b)=>a-b);
+      const target = (h && nums.includes(Number(h.read))) ? h.read : nums[0];
+      openReader(currentDetailTitle, target);
     } else {
       document.getElementById('chapterList').scrollIntoView({behavior:'smooth', block:'start'});
     }
