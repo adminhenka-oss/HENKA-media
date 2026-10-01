@@ -438,42 +438,125 @@
   }
   .history-bar .danger{ background: var(--ember); border-color: transparent; color:#fff; }
   /* Admin panel */
-  .admin-view{ background: var(--bg); min-height:100vh; }
+  .admin-view{ background: var(--bg); min-height:100vh; padding-bottom:40px; }
   .admin-top{ display:flex; align-items:center; gap:12px; padding:20px 20px 8px; }
   .admin-top h1{ margin:0; font-size:1.2rem; font-weight:800; }
   .admin-top .circle-btn{ background: var(--bg-panel); border-color: var(--border); }
   .admin-toast{
     position:sticky; top:8px; z-index:30;
-    margin: 12px 20px 0; padding:10px 14px; border-radius:10px;
+    margin: 10px 20px 0; padding:10px 14px; border-radius:12px;
     background: var(--bg-raised); border:1px solid var(--accent); color: var(--text);
     font-size:0.82rem; font-weight:700; text-align:center;
   }
-  .admin-form{ padding: 16px 20px 6px; display:flex; flex-direction:column; gap:12px; }
-  .admin-field label{ display:block; font-size:0.78rem; color: var(--text-muted); margin-bottom:6px; font-weight:700; }
-  .admin-field input, .admin-field select{
-    width:100%; padding:12px 14px; border-radius:12px; background: var(--bg-panel);
+  .admin-tabs{
+    display:flex; gap:6px; margin:14px 20px 4px; padding:4px;
+    background: var(--bg-panel); border:1px solid var(--border); border-radius:999px;
+  }
+  .admin-tab{
+    flex:1; padding:10px 0; border:none; border-radius:999px; background:transparent;
+    color: var(--text-muted); font-weight:800; font-size:0.88rem;
+  }
+  .admin-tab.active{ background: var(--accent); color:#fff; }
+  .admin-pane{ padding:12px 20px 10px; }
+
+  .admin-card{
+    background: var(--bg-panel); border:1px solid var(--border); border-radius:16px; overflow:hidden;
+  }
+  .admin-card > summary{
+    list-style:none; cursor:pointer; padding:15px 16px; font-weight:800; font-size:0.95rem;
+    color: var(--accent); display:flex; align-items:center; justify-content:space-between;
+  }
+  .admin-card > summary::-webkit-details-marker{ display:none; }
+  .admin-card > summary::after{ content:"⌄"; color: var(--text-faint); font-size:1.1rem; transition:transform .15s; }
+  .admin-card[open] > summary::after{ transform:rotate(180deg); }
+  .admin-card[open] > summary{ border-bottom:1px solid var(--border); }
+
+  .admin-form{ padding:14px 16px 18px; display:flex; flex-direction:column; gap:14px; }
+  .admin-group{ display:flex; flex-direction:column; gap:10px; padding-bottom:14px; border-bottom:1px dashed var(--border); }
+  .admin-group:last-of-type{ border-bottom:none; padding-bottom:0; }
+  .admin-group-title{ font-size:0.7rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color: var(--text-faint); }
+  .admin-field label{ display:block; font-size:0.76rem; color: var(--text-muted); margin-bottom:6px; font-weight:700; }
+  .admin-field input, .admin-field select, .admin-field textarea{
+    width:100%; padding:11px 13px; border-radius:12px; background: var(--bg);
     border:1px solid var(--border); color: var(--text); font-size:0.9rem; font-family:inherit;
   }
-  .admin-field input[type="file"]{ padding:10px 12px; font-size:0.82rem; color: var(--text-muted); }
+  .admin-field textarea{ resize:vertical; line-height:1.5; }
+  .admin-field input[type="file"]{ padding:9px 11px; font-size:0.8rem; color: var(--text-muted); }
   .admin-row-2{ display:flex; gap:10px; }
-  .admin-row-2 .admin-field{ flex:1; }
+  .admin-row-2 .admin-field{ flex:1; min-width:0; }
+  .admin-row-3{ display:flex; gap:8px; }
+  .admin-row-3 .admin-field{ flex:1; min-width:0; }
+  .admin-hint{ font-size:0.75rem; color: var(--text-faint); margin-top:6px; }
+  .admin-switch{ display:flex; align-items:center; justify-content:space-between; padding:6px 0; font-size:0.9rem; font-weight:600; }
+  .admin-switch input{
+    appearance:none; -webkit-appearance:none; width:46px; height:27px; border-radius:999px;
+    background: var(--bg-raised); border:1px solid var(--border); position:relative; flex-shrink:0;
+    transition:background .15s;
+  }
+  .admin-switch input::after{
+    content:""; position:absolute; top:2px; left:2px; width:21px; height:21px; border-radius:50%;
+    background:#fff; transition:transform .15s;
+  }
+  .admin-switch input:checked{ background: var(--accent); border-color:transparent; }
+  .admin-switch input:checked::after{ transform:translateX(19px); }
   .admin-submit{
-    margin-top:6px; padding:14px; border-radius: var(--radius-pill); border:none;
+    margin-top:2px; padding:14px; border-radius: var(--radius-pill); border:none;
     background: var(--accent); color:#fff; font-weight:800; font-size:0.95rem;
   }
-  .admin-list{ padding: 22px 20px 30px; }
-  .admin-list h3{ font-size:1rem; font-weight:800; margin:0 0 10px; }
-  .admin-item{ display:flex; align-items:center; gap:12px; padding:10px 2px; border-bottom:1px solid var(--border); }
-  .admin-item .a-cover{ width:40px; height:54px; border-radius:8px; flex-shrink:0; }
-  .admin-item .a-info{ flex:1; min-width:0; }
-  .admin-item .a-title{ font-weight:700; font-size:0.88rem; }
-  .admin-item .a-sub{ font-size:0.75rem; color: var(--text-faint); margin-top:2px; }
-  .admin-item .a-delete{ background:none; border:none; color: var(--ember); font-size:0.8rem; font-weight:700; flex-shrink:0; }
-  .admin-empty{ color: var(--text-faint); font-size:0.85rem; padding:10px 2px; }
-  .admin-field textarea{
-    width:100%; padding:12px 14px; border-radius:12px; background: var(--bg-panel);
-    border:1px solid var(--border); color: var(--text); font-size:0.88rem;
-    font-family:inherit; resize:vertical;
+  .admin-cancel{
+    padding:12px; border-radius: var(--radius-pill); border:1px solid var(--border);
+    background:transparent; color: var(--text-muted); font-weight:700; font-size:0.88rem;
+  }
+
+  .admin-section-head{ display:flex; align-items:baseline; justify-content:space-between; margin:22px 2px 10px; }
+  .admin-section-head h3{ margin:0; font-size:1rem; font-weight:800; }
+  .admin-count{ font-size:0.78rem; font-weight:700; color: var(--text-faint); margin-left:4px; }
+  .admin-search{
+    width:100%; padding:11px 14px; border-radius:999px; background: var(--bg-panel);
+    border:1px solid var(--border); color: var(--text); font-size:0.88rem; margin-bottom:12px; font-family:inherit;
+  }
+  .admin-empty{ color: var(--text-faint); font-size:0.85rem; padding:12px 2px; }
+
+  .admin-item{
+    display:grid; grid-template-columns:50px minmax(0,1fr); gap:8px 12px; align-items:start;
+    padding:12px; margin-bottom:10px; background: var(--bg-panel);
+    border:1px solid var(--border); border-radius:14px;
+  }
+  .admin-item .a-cover{ width:50px; height:68px; border-radius:8px; grid-row:1 / span 2; background-size:cover; background-position:center; }
+  .admin-item .a-info{ min-width:0; }
+  .admin-item .a-title{
+    font-weight:700; font-size:0.9rem; line-height:1.3;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+  }
+  .admin-item .a-sub{ font-size:0.74rem; color: var(--text-faint); margin-top:3px; }
+  .a-actions{ grid-column:2; display:flex; flex-direction:column; gap:6px; padding:0; }
+  .a-row{ display:flex; gap:6px; }
+  .a-actions button{
+    background: var(--bg); color: var(--text-muted); border:1px solid var(--border);
+    border-radius:999px; padding:6px 11px; font-size:0.72rem; font-weight:700;
+  }
+  .a-actions button.on{ background: var(--accent); color:#fff; border-color:transparent; }
+  .a-actions .a-edit{ color: var(--text); }
+  .a-actions .a-delete{ color: var(--ember); margin-left:0; border-color: var(--ember-soft); }
+
+  .ch-group{ background: var(--bg-panel); border:1px solid var(--border); border-radius:14px; margin-bottom:10px; overflow:hidden; }
+  .ch-group > summary{
+    list-style:none; cursor:pointer; padding:13px 14px; display:flex; align-items:center; gap:10px;
+  }
+  .ch-group > summary::-webkit-details-marker{ display:none; }
+  .ch-group-title{ flex:1; min-width:0; font-weight:700; font-size:0.9rem; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .ch-group-count{ font-size:0.74rem; color: var(--text-faint); flex-shrink:0; }
+  .ch-group > summary::after{ content:"⌄"; color: var(--text-faint); transition:transform .15s; }
+  .ch-group[open] > summary::after{ transform:rotate(180deg); }
+  .ch-row{
+    display:flex; align-items:center; gap:10px; padding:10px 14px; border-top:1px solid var(--border);
+    font-size:0.85rem;
+  }
+  .ch-row .ch-num{ font-weight:700; flex:1; }
+  .ch-row .ch-pages{ color: var(--text-faint); font-size:0.75rem; }
+  .ch-row .a-delete{
+    background:none; border:1px solid var(--ember-soft); color: var(--ember);
+    border-radius:999px; padding:5px 11px; font-size:0.72rem; font-weight:700;
   }
 
   /* Reader */
@@ -693,93 +776,128 @@
     <h1>Panel Admin</h1>
   </div>
   <div class="admin-toast" id="adminToast" hidden></div>
-  <form class="admin-form" id="adminForm">
-    <div class="admin-field">
-      <label>Judul</label>
-      <input type="text" id="admTitle" placeholder="Judul manhwa/manga/manhua" required>
-    </div>
-    <div class="admin-field">
-      <label>Gambar cover dari galeri HP (opsional, kalau kosong pakai warna default)</label>
-      <input type="file" id="admCoverFile">
-    </div>
-    <div class="admin-row-2">
-      <div class="admin-field">
-        <label>Kategori</label>
-        <select id="admCategory">
-          <option value="Manhwa">Manhwa</option>
-          <option value="Manga">Manga</option>
-          <option value="Manhua">Manhua</option>
-        </select>
-      </div>
-      <div class="admin-field">
-        <label>Status</label>
-        <select id="admStatus">
-          <option value="Ongoing">Ongoing</option>
-          <option value="Completed">Completed</option>
-        </select>
-      </div>
-    </div>
-    <div class="admin-field">
-      <label>Genre utama</label>
-      <input type="text" id="admGenre" placeholder="Contoh: Fantasy" required>
-    </div>
-    <div class="admin-field">
-      <label>Genre tambahan (pisahkan dengan koma, opsional)</label>
-      <input type="text" id="admGenresExtra" placeholder="Contoh: Action, Adventure">
-    </div>
-    <div class="admin-field">
-      <label>Penulis</label>
-      <input type="text" id="admAuthor" placeholder="Nama penulis" required>
-    </div>
-    <div class="admin-row-2">
-      <div class="admin-field">
-        <label>Rating</label>
-        <input type="number" id="admRating" min="0" max="10" step="0.1" placeholder="8.0" required>
-      </div>
-      <div class="admin-field">
-        <label>Jumlah chapter</label>
-        <input type="number" id="admChapters" min="1" placeholder="12" required>
-      </div>
-    </div>
-    <div class="admin-field">
-      <label>Views (opsional)</label>
-      <input type="text" id="admViews" placeholder="Contoh: 1.2k">
-    </div>
-    <div class="admin-field">
-      <label>Sinopsis (opsional)</label>
-      <textarea id="admSynopsis" rows="5" placeholder="Tulis ringkasan cerita di sini…"></textarea>
-    </div>
-    <div class="admin-checks">
-      <label class="admin-check"><input type="checkbox" id="admRecommended"> Tampilkan di Rekomendasi</label>
-      <label class="admin-check"><input type="checkbox" id="admPopular"> Tampilkan di Populer</label>
-    </div>
-    <button type="submit" class="admin-submit" id="admSubmitBtn">Tambah Judul</button>
-    <button type="button" class="admin-cancel" id="admCancelEdit" hidden>Batal edit</button>
-  </form>
-  <div class="admin-list">
-    <h3>Daftar Judul</h3>
-    <div id="adminItemList"></div>
+
+  <div class="admin-tabs" id="adminTabs">
+    <button type="button" class="admin-tab active" data-atab="titles">Judul</button>
+    <button type="button" class="admin-tab" data-atab="chapters">Chapter</button>
   </div>
 
-  <div class="admin-list">
-    <h3>Tambah Halaman Chapter</h3>
-    <form class="admin-form" id="chapterImageForm" style="padding:0 0 6px;">
-      <div class="admin-field">
-        <label>Judul</label>
-        <select id="chImgTitle"></select>
-      </div>
-      <div class="admin-field">
-        <label>Nomor chapter</label>
-        <input type="number" id="chImgNum" min="1" required>
-      </div>
-      <div class="admin-field">
-        <label>Gambar halaman dari galeri HP (pilih beberapa sekaligus, urut dari halaman pertama)</label>
-        <input type="file" id="chImgFiles" multiple required>
-      </div>
-      <button type="submit" class="admin-submit">Simpan Halaman Chapter</button>
-    </form>
+  <section class="admin-pane" id="adminPaneTitles">
+    <details class="admin-card" id="adminFormCard">
+      <summary><span id="adminFormHeading">+ Tambah judul baru</span></summary>
+      <form class="admin-form" id="adminForm">
+        <div class="admin-group">
+          <div class="admin-group-title">Info utama</div>
+          <div class="admin-field">
+            <label>Judul</label>
+            <input type="text" id="admTitle" placeholder="Judul manhwa/manga/manhua" required>
+          </div>
+          <div class="admin-row-2">
+            <div class="admin-field">
+              <label>Kategori</label>
+              <select id="admCategory">
+                <option value="Manhwa">Manhwa</option>
+                <option value="Manga">Manga</option>
+                <option value="Manhua">Manhua</option>
+              </select>
+            </div>
+            <div class="admin-field">
+              <label>Status</label>
+              <select id="admStatus">
+                <option value="Ongoing">Ongoing</option>
+                <option value="Completed">Completed</option>
+              </select>
+            </div>
+          </div>
+          <div class="admin-field">
+            <label>Penulis</label>
+            <input type="text" id="admAuthor" placeholder="Nama penulis" required>
+          </div>
+          <div class="admin-field">
+            <label>Cover (opsional)</label>
+            <input type="file" id="admCoverFile">
+          </div>
+        </div>
+
+        <div class="admin-group">
+          <div class="admin-group-title">Genre</div>
+          <div class="admin-field">
+            <label>Genre utama</label>
+            <input type="text" id="admGenre" placeholder="Contoh: Fantasy" required>
+          </div>
+          <div class="admin-field">
+            <label>Genre tambahan (pisahkan dengan koma)</label>
+            <input type="text" id="admGenresExtra" placeholder="Contoh: Action, Adventure">
+          </div>
+        </div>
+
+        <div class="admin-group">
+          <div class="admin-group-title">Angka</div>
+          <div class="admin-row-3">
+            <div class="admin-field">
+              <label>Rating</label>
+              <input type="number" id="admRating" min="0" max="10" step="0.1" placeholder="8.0" required>
+            </div>
+            <div class="admin-field">
+              <label>Jml chapter</label>
+              <input type="number" id="admChapters" min="1" placeholder="12" required>
+            </div>
+            <div class="admin-field">
+              <label>Views</label>
+              <input type="text" id="admViews" placeholder="1.2k">
+            </div>
+          </div>
+        </div>
+
+        <div class="admin-group">
+          <div class="admin-group-title">Sinopsis</div>
+          <div class="admin-field">
+            <textarea id="admSynopsis" rows="5" placeholder="Tulis ringkasan cerita di sini…"></textarea>
+          </div>
+        </div>
+
+        <div class="admin-group">
+          <div class="admin-group-title">Tampil di beranda</div>
+          <label class="admin-switch"><span>Rekomendasi</span><input type="checkbox" id="admRecommended"></label>
+          <label class="admin-switch"><span>Populer</span><input type="checkbox" id="admPopular"></label>
+        </div>
+
+        <button type="submit" class="admin-submit" id="admSubmitBtn">Tambah Judul</button>
+        <button type="button" class="admin-cancel" id="admCancelEdit" hidden>Batal edit</button>
+      </form>
+    </details>
+
+    <div class="admin-section-head">
+      <h3>Daftar Judul <span class="admin-count" id="adminTitleCount"></span></h3>
+    </div>
+    <input type="search" class="admin-search" id="adminSearch" placeholder="Cari judul…">
+    <div id="adminItemList"></div>
+  </section>
+
+  <section class="admin-pane" id="adminPaneChapters" hidden>
+    <details class="admin-card" id="chapterFormCard" open>
+      <summary><span>+ Tambah chapter</span></summary>
+      <form class="admin-form" id="chapterImageForm">
+        <div class="admin-field">
+          <label>Judul</label>
+          <select id="chImgTitle"></select>
+        </div>
+        <div class="admin-field">
+          <label>Nomor chapter (boleh desimal: 1, 1.4, 12.5)</label>
+          <input type="number" id="chImgNum" min="0" step="any" inputmode="decimal" placeholder="Contoh: 1.4" required>
+        </div>
+        <div class="admin-field">
+          <label>Halaman chapter (pilih beberapa sekaligus, urut dari halaman pertama)</label>
+          <input type="file" id="chImgFiles" multiple required>
+          <div class="admin-hint" id="chImgInfo"></div>
+        </div>
+        <button type="submit" class="admin-submit">Simpan Halaman Chapter</button>
+      </form>
+    </details>
+
+    <div class="admin-section-head"><h3>Daftar Chapter</h3></div>
     <div id="chapterImageList"></div>
-  </div>
+  </section>
 </div>
 
 <div class="reader-view" id="readerView" hidden>
@@ -1465,13 +1583,20 @@
   ];
 
   function renderAdminList(){
-    const items = [];
+    const q = (document.getElementById('adminSearch').value || '').trim().toLowerCase();
+    const all = [];
     Object.keys(titles).forEach(cat=>{
-      titles[cat].forEach(it=>{ if(it.isCustom) items.push({cat, it}); });
+      titles[cat].forEach(it=>{ if(it.isCustom) all.push({cat, it}); });
     });
+    const items = q ? all.filter(({it})=>it.t.toLowerCase().includes(q)) : all;
+    document.getElementById('adminTitleCount').textContent = all.length ? `(${all.length})` : '';
     const wrap = document.getElementById('adminItemList');
+    if(all.length === 0){
+      wrap.innerHTML = `<div class="admin-empty">Belum ada judul. Ketuk "+ Tambah judul baru" di atas.</div>`;
+      return;
+    }
     if(items.length === 0){
-      wrap.innerHTML = `<div class="admin-empty">Belum ada judul. Tambahkan lewat form di atas.</div>`;
+      wrap.innerHTML = `<div class="admin-empty">Tidak ada judul yang cocok.</div>`;
       return;
     }
     wrap.innerHTML = items.map(({cat, it})=>`
@@ -1479,15 +1604,33 @@
         <div class="a-cover" style="${coverStyle(it)}"></div>
         <div class="a-info">
           <div class="a-title">${it.t}</div>
-          <div class="a-sub">${cat} · ${it.genres.join(', ')} · ${it.ch}</div>
+          <div class="a-sub">${cat} · ${it.ch} · ${it.status === 'Ongoing' ? 'Berlanjut' : 'Tamat'}</div>
         </div>
         <div class="a-actions" data-cat="${cat}" data-id="${it.supabaseId}">
-          <button type="button" class="a-flag ${it.isRecommended ? 'on' : ''}" data-flag="rec">${it.isRecommended ? '✓ ' : ''}Rekomendasi</button>
-          <button type="button" class="a-flag ${it.isPopular ? 'on' : ''}" data-flag="pop">${it.isPopular ? '✓ ' : ''}Populer</button>
-          <button type="button" class="a-edit">Edit</button>
-          <button type="button" class="a-delete">Hapus</button>
+          <div class="a-row">
+            <button type="button" class="a-flag ${it.isRecommended ? 'on' : ''}" data-flag="rec">${it.isRecommended ? '✓ ' : ''}Rekomendasi</button>
+            <button type="button" class="a-flag ${it.isPopular ? 'on' : ''}" data-flag="pop">${it.isPopular ? '✓ ' : ''}Populer</button>
+          </div>
+          <div class="a-row">
+            <button type="button" class="a-edit">Edit</button>
+            <button type="button" class="a-delete">Hapus</button>
+          </div>
         </div>
       </div>`).join('');
+  }
+
+  document.getElementById('adminSearch').addEventListener('input', renderAdminList);
+
+  document.getElementById('adminTabs').addEventListener('click', e=>{
+    const btn = e.target.closest('.admin-tab');
+    if(!btn) return;
+    showAdminTab(btn.dataset.atab);
+  });
+  function showAdminTab(name){
+    document.querySelectorAll('#adminTabs .admin-tab').forEach(b=>b.classList.toggle('active', b.dataset.atab === name));
+    document.getElementById('adminPaneTitles').hidden = name !== 'titles';
+    document.getElementById('adminPaneChapters').hidden = name !== 'chapters';
+    window.scrollTo(0,0);
   }
 
   async function getChapterImagesRemote(item, num){
@@ -1569,23 +1712,43 @@
       wrap.innerHTML = `<div class="admin-empty">Belum ada halaman chapter yang ditambahkan.</div>`;
       return;
     }
-    wrap.innerHTML = entries.map(en=>`
-      <div class="admin-item">
-        <div class="a-info">
-          <div class="a-title">${en.title}</div>
-          <div class="a-sub">Chapter ${en.num} · ${en.count} halaman</div>
-        </div>
-        <button type="button" class="a-delete" data-del-title-id="${en.titleId}" data-del-num="${en.num}">Hapus</button>
-      </div>`).join('');
+    const groups = new Map();
+    entries.forEach(en=>{
+      if(!groups.has(en.titleId)) groups.set(en.titleId, { title: en.title, list: [] });
+      groups.get(en.titleId).list.push(en);
+    });
+    wrap.innerHTML = [...groups.values()].map((g, idx)=>{
+      const rows = g.list.sort((a,b)=>Number(b.num) - Number(a.num)).map(en=>`
+        <div class="ch-row">
+          <span class="ch-num">Chapter ${en.num}</span>
+          <span class="ch-pages">${en.count} halaman</span>
+          <button type="button" class="a-delete" data-del-title-id="${en.titleId}" data-del-num="${en.num}">Hapus</button>
+        </div>`).join('');
+      return `
+        <details class="ch-group" ${idx === 0 ? 'open' : ''}>
+          <summary>
+            <span class="ch-group-title">${g.title}</span>
+            <span class="ch-group-count">${g.list.length} chapter</span>
+          </summary>
+          ${rows}
+        </details>`;
+    }).join('');
   }
 
   document.getElementById('chapterImageForm').addEventListener('submit', async e=>{
     e.preventDefault();
     const titleId = document.getElementById('chImgTitle').value;
-    const num = document.getElementById('chImgNum').value;
+    const rawNum = document.getElementById('chImgNum').value.trim().replace(',', '.');
+    const parsedNum = Number(rawNum);
     const files = Array.from(document.getElementById('chImgFiles').files || []);
     const toast = document.getElementById('adminToast');
-    if(!titleId || !num || files.length === 0) return;
+    if(!titleId || rawNum === '' || files.length === 0) return;
+    if(!isFinite(parsedNum) || parsedNum < 0){
+      toast.textContent = 'Nomor chapter tidak valid. Contoh yang benar: 1, 1.4, 12.5';
+      toast.hidden = false;
+      return;
+    }
+    const num = String(parsedNum);
 
     toast.textContent = `Mengunggah ${files.length} gambar…`;
     toast.hidden = false;
@@ -1685,6 +1848,11 @@
     toast.hidden = false;
   });
 
+  document.getElementById('chImgFiles').addEventListener('change', function(){
+    const n = this.files ? this.files.length : 0;
+    document.getElementById('chImgInfo').textContent = n ? n + ' gambar dipilih' : '';
+  });
+
   let editingItem = null;
 
   function friendlyError(err){
@@ -1695,6 +1863,8 @@
       return 'Ditolak database. Pastikan kamu login dengan adminhenka@gmail.com dan admin-security.sql sudah dijalankan.';
     if(/NotReadable|could not be read|ProgressEvent|tidak bisa dibaca/i.test(m))
       return 'Chrome tidak bisa membaca file gambar ini. Cek izin Chrome untuk Foto/File di pengaturan HP, atau coba gambar lain. Detail: ' + m;
+    if(/invalid input syntax for type integer|integer/i.test(m) && /chapter/i.test(m))
+      return 'Kolom nomor chapter di database masih bilangan bulat. Jalankan admin-chapter-desimal.sql di Supabase SQL Editor dulu.';
     if(/Harus login/i.test(m))
       return 'Server upload menolak login. Pastikan SUPABASE_ANON_KEY sudah ditambahkan di Vercel, lalu Redeploy.';
     if(/Hanya admin/i.test(m))
@@ -1711,6 +1881,8 @@
     editingItem = null;
     document.getElementById('admSubmitBtn').textContent = 'Tambah Judul';
     document.getElementById('admCancelEdit').hidden = true;
+    document.getElementById('adminFormHeading').textContent = '+ Tambah judul baru';
+    document.getElementById('adminFormCard').open = false;
   }
 
   function startEdit(cat, id){
@@ -1732,10 +1904,13 @@
     document.getElementById('admPopular').checked = !!it.isPopular;
     document.getElementById('admSubmitBtn').textContent = 'Simpan Perubahan';
     document.getElementById('admCancelEdit').hidden = false;
+    document.getElementById('adminFormHeading').textContent = 'Edit judul';
+    showAdminTab('titles');
+    document.getElementById('adminFormCard').open = true;
     const toast = document.getElementById('adminToast');
     toast.textContent = `Mengedit "${it.t}". Cover lama dipakai kalau kamu tidak memilih gambar baru.`;
     toast.hidden = false;
-    window.scrollTo(0,0);
+    document.getElementById('adminFormCard').scrollIntoView({ behavior:'smooth', block:'start' });
   }
 
   document.getElementById('admCancelEdit').addEventListener('click', ()=>{
