@@ -183,7 +183,13 @@
 
   /* Detail page */
   .detail-view{ background: var(--bg); min-height:100vh; }
-  .detail-hero{ position:relative; height:230px; overflow:hidden; }
+  .detail-hero{ position:relative; height:290px; overflow:hidden; }
+  .detail-poster{
+    position:absolute; z-index:3; top:16px; left:50%; transform:translateX(-50%);
+    height:210px; width:auto; max-width:60%; object-fit:cover; border-radius:12px;
+    box-shadow:0 12px 30px -8px rgba(0,0,0,0.65); border:1px solid rgba(255,255,255,0.18);
+  }
+  .detail-poster[hidden]{ display:none; }
   .detail-banner{ position:absolute; inset:0; filter: blur(20px) saturate(1.15); transform:scale(1.2); }
   .detail-hero::after{
     content:""; position:absolute; inset:0;
@@ -592,6 +598,7 @@
 <div class="detail-view" id="detailView" hidden>
   <div class="detail-hero">
     <div class="detail-banner" id="detailBanner"></div>
+    <img class="detail-poster" id="detailPoster" alt="" hidden>
     <div class="detail-topbar">
       <button class="circle-btn" id="detailBack" aria-label="Kembali"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg></button>
       <button class="circle-btn" aria-label="Laporkan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4"/><path d="M5 4h13l-3 4 3 4H5"/></svg></button>
@@ -1130,6 +1137,16 @@
     banner.style.cssText = item.cover
       ? `background-image:url('${item.cover}'); background-size:cover; background-position:center;`
       : `background: linear-gradient(135deg, ${item.c[0]}, ${item.c[1]});`;
+    const poster = document.getElementById('detailPoster');
+    poster.onerror = ()=>{ poster.hidden = true; };
+    if(item.cover){
+      poster.src = item.cover;
+      poster.alt = item.t;
+      poster.hidden = false;
+    } else {
+      poster.removeAttribute('src');
+      poster.hidden = true;
+    }
     document.getElementById('detailStatus').textContent =
       item.status === 'Ongoing' ? 'Masih berlanjut' : 'Tamat';
     document.getElementById('detailTitle').textContent = item.t;
@@ -1529,7 +1546,7 @@
         .eq('title_id', it.supabaseId)
         .order('chapter_num', { ascending:true });
       if(error || !data) continue;
-      data.forEach(row=> out.push({ title: it.t, titleId: it.supabaseId, num: row.chapter_num, count: row.image_urls.length }));
+      data.forEach(row=> out.push({ title: it.t, titleId: it.supabaseId, num: row.chapter_num, count: (row.image_urls || []).length }));
     }
     return out;
   }
