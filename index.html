@@ -1090,27 +1090,38 @@
     renderPopuler(genre);
   }
 
-  const HISTORY_KEY = 'henka_history';
+  const HISTORY_KEY = 'henka_history'; // kunci lama (versi sebelum sinkron akun)
 
   function loadHistory(){
-    try{
-      const raw = localStorage.getItem(HISTORY_KEY);
-      const list = raw ? JSON.parse(raw) : [];
-      return Array.isArray(list) ? list : [];
-    }catch(e){ return []; }
+    return Object.keys(lib.h).map(id=>{
+      const it = itemById(id);
+      const e = lib.h[id];
+      return it ? { title: it.t, read: e.read, max: e.max, at: e.at } : null;
+    }).filter(Boolean).sort((a,b)=>b.at - a.at);
   }
-  function saveHistory(list){
-    try{ localStorage.setItem(HISTORY_KEY, JSON.stringify(list)); }catch(e){}
-  }
+
   function recordHistory(title, num){
+    const it = findItem(title);
+    if(!it || !it.supabaseId) return;
+    const id = String(it.supabaseId);
     const n = Number(num);
     const chap = isNaN(n) ? num : n;
-    const prev = loadHistory().find(h=>h.title === title);
+    const prev = lib.h[id];
     const max = Math.max(isNaN(n) ? 0 : n, prev && prev.max ? prev.max : 0);
-    const list = loadHistory().filter(h=>h.title !== title);
-    list.unshift({ title, read: chap, max, at: Date.now() });
-    saveHistory(list.slice(0, 50));
+    lib.h[id] = { read: chap, max, at: Date.now() };
+    libSaveCache();
+    libPushHistory(id);
   }
+
+  function deleteHistory(titleNames){
+    const ids = titleNames.map(t=>{ const it = findItem(t); return it && it.supabaseId ? String(it.supabaseId) : null; }).filter(Boolean);
+    ids.forEach(id=>{ delete lib.h[id]; });
+    libSaveCache();
+    if(currentUser && ids.length){
+      libRun(sb.from('reading_history').delete().eq('user_id', currentUser.id).in('title_id', ids), 'hapus riwayat');
+    }
+  }
+
   function historyProgress(h, item){
     const total = parseInt(String(item.ch).replace(/\D/g,'')) || h.max || 1;
     const done = h.max || Number(h.read) || 0;
@@ -1212,21 +1223,187 @@
     if(row && currentDetailTitle){ openReader(currentDetailTitle, row.dataset.num); }
   });
 
-  function bookmarkKey(){ return currentUser ? 'henka_bookmarks_' + currentUser.id : null; }
-  function getBookmarks(){
-    const key = bookmarkKey();
-    if(!key) return {};
+  // ===== Library: koleksi, riwayat, dan tema tersimpan di akun Google =====
+  const LIB_PREFIX = 'henka_lib_';
+  let lib = { b:{}, h:{} };      // b: { idJudul: true }   h: { idJudul: { read, max, at } }
+  let libUserId = undefined;
+  let titlesLoaded = false;
+
+  function libKey(){ return LIB_PREFIX + (currentUser ? currentUser.id : 'guest'); }
+  function libSaveCache(){ try{ localStorage.setItem(libKey(), JSON.stringify(lib)); }catch(e){} }
+  function libReadCache(key){
     try{
       const raw = localStorage.getItem(key);
-      return raw ? JSON.parse(raw) : {};
-    }catch(e){ return {}; }
+      const o = raw ? JSON.parse(raw) : null;
+      return { b: (o && o.b) || {}, h: (o && o.h) || {} };
+    }catch(e){ return { b:{}, h:{} }; }
+  }
+  function libRun(builder, label){
+    Promise.resolve(builder).then(r=>{
+      if(r && r.error) console.warn('Sinkron akun gagal (' + label + '):', r.error.message);
+    }, err=>console.warn('Sinkron akun gagal (' + label + '):', err));
+  }
+  function itemById(id){
+    for(const cat of Object.keys(titles)){
+      const it = titles[cat].find(x=>String(x.supabaseId) === String(id));
+      if(it) return it;
+    }
+    return null;
+  }
+
+  function getBookmarks(){
+    const out = {};
+    Object.keys(lib.b).forEach(id=>{ const it = itemById(id); if(it) out[it.t] = true; });
+    return out;
   }
   function setBookmark(title, on){
-    const key = bookmarkKey();
-    if(!key) return;
-    const bm = getBookmarks();
-    if(on) bm[title] = true; else delete bm[title];
-    try{ localStorage.setItem(key, JSON.stringify(bm)); }catch(e){}
+    const it = findItem(title);
+    if(!it || !it.supabaseId) return;
+    const id = String(it.supabaseId);
+    if(on) lib.b[id] = true; else delete lib.b[id];
+    libSaveCache();
+    if(!currentUser) return;
+    if(on) libRun(sb.from('bookmarks').upsert({ user_id: currentUser.id, title_id: id }, { onConflict: 'user_id,title_id' }), 'simpan koleksi');
+    else libRun(sb.from('bookmarks').delete().eq('user_id', currentUser.id).eq('title_id', id), 'hapus koleksi');
+  }
+
+  function libPushHistory(id){
+    if(!currentUser || !lib.h[id]) return;
+    const e = lib.h[id];
+    libRun(sb.from('reading_history').upsert({
+      user_id: currentUser.id, title_id: id,
+      chapter_read: Number(e.read) || 0, max_chapter: Number(e.max) || 0,
+      read_at: new Date(e.at).toISOString()
+    }, { onConflict: 'user_id,title_id' }), 'simpan riwayat');
+  }
+
+  // data lama di perangkat ini (tamu + versi sebelum sinkron) yang diimpor sekali saat login
+  function collectImport(){
+    const imp = { b:{}, h:{} };
+    const g = libReadCache(LIB_PREFIX + 'guest');
+    Object.assign(imp.b, g.b);
+    Object.assign(imp.h, g.h);
+    try{
+      const raw = localStorage.getItem(HISTORY_KEY);
+      (raw ? JSON.parse(raw) : []).forEach(h=>{
+        const it = findItem(h.title);
+        if(!it || !it.supabaseId) return;
+        const id = String(it.supabaseId);
+        const prev = imp.h[id];
+        const max = Number(h.max) || Number(h.read) || 0;
+        if(!prev || h.at > prev.at) imp.h[id] = { read: h.read, max: Math.max(max, prev ? prev.max : 0), at: h.at };
+      });
+    }catch(e){}
+    ['henka_bookmarks_' + currentUser.id, 'henka_bookmarks'].forEach(k=>{
+      try{
+        const raw = localStorage.getItem(k);
+        const o = raw ? JSON.parse(raw) : {};
+        Object.keys(o).forEach(name=>{
+          const it = findItem(name);
+          if(it && it.supabaseId) imp.b[String(it.supabaseId)] = true;
+        });
+      }catch(e){}
+    });
+    return imp;
+  }
+  function clearImportSources(){
+    try{
+      localStorage.removeItem(LIB_PREFIX + 'guest');
+      localStorage.removeItem(HISTORY_KEY);
+      localStorage.removeItem('henka_bookmarks');
+      if(currentUser) localStorage.removeItem('henka_bookmarks_' + currentUser.id);
+    }catch(e){}
+  }
+
+  function applyTheme(t){
+    const light = t === 'light';
+    document.documentElement.setAttribute('data-theme', light ? 'light' : 'dark');
+    const btn = document.getElementById('themeToggle');
+    if(btn) btn.textContent = light ? '☀' : '☾';
+    try{ localStorage.setItem('henka_theme', light ? 'light' : 'dark'); }catch(e){}
+  }
+
+  async function loadLibrary(){
+    lib = libReadCache(libKey());           // tampilkan cache dulu supaya cepat
+    if(!currentUser) return;
+    const uid = currentUser.id;
+    try{
+      const [bRes, hRes] = await Promise.all([
+        sb.from('bookmarks').select('title_id').eq('user_id', uid),
+        sb.from('reading_history').select('title_id,chapter_read,max_chapter,read_at').eq('user_id', uid)
+      ]);
+      if(bRes.error || hRes.error) throw (bRes.error || hRes.error);
+
+      const remoteB = {};
+      (bRes.data || []).forEach(r=>{ remoteB[String(r.title_id)] = true; });
+      const remoteH = {};
+      (hRes.data || []).forEach(r=>{
+        remoteH[String(r.title_id)] = {
+          read: Number(r.chapter_read), max: Number(r.max_chapter), at: new Date(r.read_at).getTime()
+        };
+      });
+
+      const imp = collectImport();
+      const newB = [], newH = [];
+      Object.keys(imp.b).forEach(id=>{ if(!remoteB[id]){ remoteB[id] = true; newB.push(id); } });
+      Object.keys(imp.h).forEach(id=>{
+        const loc = imp.h[id], rem = remoteH[id];
+        if(!rem || loc.at > rem.at){
+          remoteH[id] = { read: loc.read, max: Math.max(Number(loc.max) || 0, rem ? rem.max : 0), at: loc.at };
+          newH.push(id);
+        } else if((Number(loc.max) || 0) > rem.max){
+          rem.max = Number(loc.max);
+          newH.push(id);
+        }
+      });
+
+      lib = { b: remoteB, h: remoteH };
+      libSaveCache();
+
+      let pushOk = true;
+      if(newB.length){
+        const r = await sb.from('bookmarks').upsert(newB.map(id=>({ user_id: uid, title_id: id })), { onConflict: 'user_id,title_id' });
+        if(r && r.error){ pushOk = false; console.warn('Impor koleksi gagal:', r.error.message); }
+      }
+      if(newH.length){
+        const r = await sb.from('reading_history').upsert(newH.map(id=>({
+          user_id: uid, title_id: id, chapter_read: Number(remoteH[id].read) || 0,
+          max_chapter: Number(remoteH[id].max) || 0, read_at: new Date(remoteH[id].at).toISOString()
+        })), { onConflict: 'user_id,title_id' });
+        if(r && r.error){ pushOk = false; console.warn('Impor riwayat gagal:', r.error.message); }
+      }
+      if(pushOk) clearImportSources();
+    }catch(e){
+      console.warn('Memuat koleksi/riwayat dari akun gagal (sudah menjalankan akun-sinkron.sql?):', e && e.message ? e.message : e);
+    }
+
+    // pengaturan: tema
+    try{
+      const r = await sb.from('user_settings').select('theme').eq('user_id', uid).maybeSingle();
+      if(r && !r.error){
+        if(r.data && r.data.theme){ applyTheme(r.data.theme); }
+        else {
+          const local = localStorage.getItem('henka_theme');
+          if(local) libRun(sb.from('user_settings').upsert({ user_id: uid, theme: local }, { onConflict: 'user_id' }), 'simpan tema');
+        }
+      }
+    }catch(e){}
+  }
+
+  async function ensureLibrary(){
+    const uid = currentUser ? currentUser.id : null;
+    if(libUserId === uid) return false;
+    libUserId = uid;
+    await loadLibrary();
+    return true;
+  }
+
+  function rerenderLibraryViews(){
+    renderContinue();
+    if(!document.getElementById('koleksiView').hidden) renderKoleksi();
+    if(!document.getElementById('seeAllView').hidden && seeAllState) showSeeAll(seeAllState.kind, seeAllState.genre);
+    if(!document.getElementById('profileView').hidden) renderProfile();
+    if(typeof activeTab !== 'undefined' && activeTab === 'riwayat') renderHistory();
   }
 
   let toastTimer = null;
@@ -1463,6 +1640,7 @@
       renderProfile();
     }
     if(!document.getElementById('koleksiView').hidden){ renderKoleksi(); }
+    if(titlesLoaded){ ensureLibrary().then(changed=>{ if(changed) rerenderLibraryViews(); }); }
   });
 
   async function signInWithGoogle(){
@@ -1522,9 +1700,8 @@
           <div class="profile-sub">${currentUser.email || ''}${joined ? ' · Bergabung ' + joined : ''}</div>
         </div>
         <div class="profile-stats">
-          <div><div class="num">128</div><div class="plabel">Dibaca</div></div>
+          <div><div class="num">${loadHistory().length}</div><div class="plabel">Dibaca</div></div>
           <div><div class="num">${bmCount}</div><div class="plabel">Koleksi</div></div>
-          <div><div class="num">14</div><div class="plabel">Hari Beruntun</div></div>
         </div>
         <div class="profile-menu">
           ${isAdmin() ? menuItem('admin','Panel Admin',{action:'admin'}) : ''}
@@ -2352,7 +2529,7 @@
     wrapSel:'#historyWrap', cardSel:'.history-card', barId:'historyBar',
     confirmText:n=>'Hapus ' + n + ' riwayat baca yang dipilih?',
     onDelete:titlesToDelete=>{
-      saveHistory(loadHistory().filter(h=>!titlesToDelete.includes(h.title)));
+      deleteHistory(titlesToDelete);
       renderHistory();
       renderContinue();
     }
@@ -2382,6 +2559,9 @@
     root.setAttribute('data-theme', isLight ? 'dark' : 'light');
     themeBtn.textContent = isLight ? '☾' : '☀';
     try{ localStorage.setItem('henka_theme', isLight ? 'dark' : 'light'); }catch(e){}
+    if(currentUser){
+      libRun(sb.from('user_settings').upsert({ user_id: currentUser.id, theme: isLight ? 'dark' : 'light' }, { onConflict: 'user_id' }), 'simpan tema');
+    }
   });
   try{
     const saved = localStorage.getItem('henka_theme');
@@ -2395,6 +2575,8 @@
     await refreshAuthState();
     updateHeaderAvatar();
     await loadCustomTitles();
+    titlesLoaded = true;
+    await ensureLibrary();
     selectGenre('Manhwa');
     renderContinue();
   })();
