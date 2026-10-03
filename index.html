@@ -219,6 +219,15 @@
   }
   .chip.rating{ color: var(--ember); border-color: var(--ember-soft); }
   .chip.chip-clickable{ cursor:pointer; }
+  .info-table{ display:flex; flex-direction:column; gap:16px; margin:24px 0 28px; }
+  .info-row{ display:flex; gap:14px; align-items:flex-start; }
+  .info-label{ width:76px; flex-shrink:0; font-weight:800; font-size:1rem; color: var(--text); padding-top:9px; }
+  .info-vals{ flex:1; min-width:0; display:flex; flex-wrap:wrap; gap:8px; }
+  .info-chip{
+    background: var(--bg-raised); border:1px solid var(--border); color: var(--text);
+    padding:9px 15px; border-radius:11px; font-size:0.92rem; font-weight:500; line-height:1.25;
+  }
+  .info-chip.chip-clickable:active{ opacity:0.65; }
   .action-row{ display:flex; gap:12px; margin-bottom:8px; }
   .btn-read, .btn-bookmark{
     flex:1; padding:15px; border-radius: var(--radius-pill); border:none;
@@ -785,6 +794,7 @@
     <h3 class="detail-subhead">Sinopsis</h3>
     <p class="synopsis clamped" id="detailSynopsis"></p>
     <button class="expand-btn" id="synopsisToggle">⌄</button>
+    <div class="info-table" id="detailInfo"></div>
     <div class="chapter-head">
       <h3 class="detail-subhead" style="margin:0;">Daftar Chapter</h3>
       <button class="sort-btn" id="sortToggle">↓ Terbaru</button>
@@ -895,6 +905,10 @@
           <div class="admin-field">
             <label>Penulis</label>
             <input type="text" id="admAuthor" placeholder="Nama penulis" required>
+          </div>
+          <div class="admin-field">
+            <label>Artis / ilustrator (opsional)</label>
+            <input type="text" id="admArtist" placeholder="Nama artis">
           </div>
           <div class="admin-field">
             <label>Cover (opsional)</label>
@@ -1128,6 +1142,7 @@
       genres: row.genres || [],
       category: row.category || null,
       synopsis: row.synopsis || '',
+      artist: row.artist || '',
       isRecommended: !!row.is_recommended,
       isPopular: !!row.is_popular,
       isCustom: true
@@ -1569,10 +1584,20 @@
       item.status === 'Ongoing' ? 'Masih berlanjut' : 'Tamat';
     document.getElementById('detailTitle').textContent = item.t;
 
-    document.getElementById('detailChips').innerHTML = `
-      <span class="chip rating">★ ${item.rating}</span>
-      ${item.genres.map(g=>`<span class="chip chip-clickable" data-genre="${g}">${g}</span>`).join('')}
-      <span class="chip">${item.author}</span>`;
+    document.getElementById('detailChips').innerHTML = `<span class="chip rating">★ ${item.rating}</span>`;
+
+    {
+      const rows = [];
+      if(item.genres && item.genres.length){
+        rows.push(['Genre', item.genres.map(g=>`<span class="info-chip chip-clickable" data-genre="${g}">${g}</span>`).join('')]);
+      }
+      if(item.author) rows.push(['Penulis', `<span class="info-chip">${item.author}</span>`]);
+      if(item.artist) rows.push(['Artis', `<span class="info-chip">${item.artist}</span>`]);
+      const fmt = categoryOf(item);
+      if(fmt) rows.push(['Format', `<span class="info-chip">${fmt}</span>`]);
+      document.getElementById('detailInfo').innerHTML = rows.map(([label, chips])=>`
+        <div class="info-row"><div class="info-label">${label}</div><div class="info-vals">${chips}</div></div>`).join('');
+    }
 
     const isBookmarked = !!getBookmarks()[item.t];
     const bookmarkBtn = document.getElementById('detailBookmarkBtn');
@@ -2561,6 +2586,8 @@
 
   function friendlyError(err){
     const m = (err && err.message) ? err.message : String(err);
+    if(/artist/i.test(m))
+      return 'Kolom artis belum ada di database. Jalankan admin-artis.sql di Supabase SQL Editor dulu.';
     if(/is_recommended|is_popular|synopsis|schema cache/i.test(m))
       return 'Kolom baru belum ada di database. Jalankan admin-synopsis.sql (dan admin-flags.sql kalau belum) di Supabase SQL Editor dulu.';
     if(/row-level security|permission denied/i.test(m))
@@ -2604,6 +2631,7 @@
     document.getElementById('admChapters').value = parseInt(String(it.ch).replace(/\D/g,'')) || 1;
     document.getElementById('admViews').value = it.views === '0' ? '' : it.views;
     document.getElementById('admSynopsis').value = it.synopsis || '';
+    document.getElementById('admArtist').value = it.artist || '';
     document.getElementById('admRecommended').checked = !!it.isRecommended;
     document.getElementById('admPopular').checked = !!it.isPopular;
     document.getElementById('admSubmitBtn').textContent = 'Simpan Perubahan';
@@ -2638,6 +2666,7 @@
     const chapters = document.getElementById('admChapters').value;
     const views = document.getElementById('admViews').value.trim() || '0';
     const synopsis = document.getElementById('admSynopsis').value.trim();
+    const artist = document.getElementById('admArtist').value.trim();
     const isRec = document.getElementById('admRecommended').checked;
     const isPop = document.getElementById('admPopular').checked;
 
@@ -2663,6 +2692,7 @@
         author,
         genres: [mainGenre, ...extra],
         synopsis: synopsis || null,
+        ...((artist || (editingItem && (titles[editingItem.cat].find(x=>x.supabaseId === editingItem.id) || {}).artist)) ? { artist: artist || null } : {}),
         is_recommended: isRec,
         is_popular: isPop
       };
