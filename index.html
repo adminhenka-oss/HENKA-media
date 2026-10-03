@@ -578,7 +578,10 @@
 
   /* Reader */
   .reader-view{ background: var(--reader-bg, #000); min-height:100vh; }
-  .reader-pages img{ width:100%; display:block; }
+  .reader-pages img{ width:100%; display:block; min-height:220px; background:#101013; color:transparent; font-size:0; }
+  .reader-pages img.failed{
+    color:#a4a4b0; font-size:0.85rem; text-align:center; padding:90px 24px; line-height:1.6; cursor:pointer;
+  }
   .reader-empty{ color:#9b9ba6; text-align:center; padding:120px 30px 160px; line-height:1.7; }
   .reader-bar{
     position:fixed; z-index:50; background:rgba(34,34,40,0.96); color:#e8e8ee;
@@ -1099,13 +1102,23 @@
 
   const titles = { Manhwa: [], Manga: [], Manhua: [] };
 
+  // Gambar disimpan di R2 (alamat pub-xxxx.r2.dev). Sebagian operator seluler memblokir alamat itu,
+  // jadi saat ditampilkan, alamatnya dialihkan lewat domain Henka sendiri (/img/...), yang diteruskan oleh vercel.json.
+  const USE_IMAGE_PROXY = true;
+  const R2_HOST_RE = /^https:\/\/pub-[a-z0-9]+\.r2\.dev\//i;
+  function proxyUrl(u){
+    if(!u || !USE_IMAGE_PROXY) return u;
+    return R2_HOST_RE.test(u) ? u.replace(R2_HOST_RE, '/img/') : u;
+  }
+
   function mapRowToItem(row){
     return {
       supabaseId: row.id,
       id: row.id,
       t: row.title,
       c: [row.color_1 || '#5b2a8c', row.color_2 || '#1c0e2e'],
-      cover: row.cover_url || null,
+      cover: proxyUrl(row.cover_url) || null,
+      coverDirect: row.cover_url || null,
       ch: `CH.${row.chapter_count}`,
       views: row.views || '0',
       tag: row.tag,
@@ -2351,9 +2364,38 @@
     });
   }, { passive:true });
 
-  document.getElementById('readerPages').addEventListener('click', ()=>{
+  document.getElementById('readerPages').addEventListener('click', e=>{
+    const img = e.target.closest && e.target.closest('img.failed');
+    if(img){ retryReaderImage(img, true); return; }
     setReaderUI(document.getElementById('readerView').classList.contains('ui-hidden'));
   });
+
+  // gambar gagal dimuat (misalnya sinyal data seluler putus-nyambung): coba lagi otomatis, lalu beri tombol manual
+  function retryReaderImage(img, manual){
+    // jalur /img/ belum aktif atau gagal: coba alamat asli (R2) satu kali
+    if(!manual && img.dataset.direct && !img.dataset.usedDirect && img.getAttribute('src') !== img.dataset.direct){
+      img.dataset.usedDirect = '1';
+      img.dataset.src = img.dataset.direct;
+      img.src = img.dataset.direct;
+      return;
+    }
+    const orig = img.dataset.src || img.getAttribute('src') || '';
+    if(!img.dataset.src) img.dataset.src = orig;
+    if(manual){ img.dataset.tries = '0'; img.classList.remove('failed'); }
+    const tries = Number(img.dataset.tries || 0);
+    if(tries >= 3){
+      img.classList.add('failed');
+      img.alt = 'Halaman ini gagal dimuat. Ketuk untuk mencoba lagi.';
+      return;
+    }
+    img.dataset.tries = String(tries + 1);
+    setTimeout(()=>{
+      img.src = orig + (orig.includes('?') ? '&' : '?') + 'r=' + Date.now();
+    }, manual ? 0 : 1200 * (tries + 1));
+  }
+  document.getElementById('readerPages').addEventListener('error', e=>{
+    if(e.target && e.target.tagName === 'IMG') retryReaderImage(e.target, false);
+  }, true);
 
   // --- sheet pengaturan & daftar chapter ---
   function openReaderSheet(html){
@@ -2453,7 +2495,7 @@
     const images = (item && item.supabaseId) ? await getChapterImagesRemote(item, num) : null;
     if(Number(num) !== readerNum) return;   // pembaca sudah pindah chapter
     if(images && images.length){
-      pagesWrap.innerHTML = images.map(url=>`<img src="${url}" loading="lazy" decoding="async" alt="Halaman ${title} Chapter ${num}">`).join('');
+      pagesWrap.innerHTML = images.map(url=>`<img src="${proxyUrl(url)}" data-direct="${url}" loading="lazy" decoding="async" alt="Halaman ${title} Chapter ${num}">`).join('');
       pagesWrap.hidden = false;
       emptyMsg.hidden = true;
       endBox.hidden = false;
@@ -3059,6 +3101,15 @@
       themeBtn.textContent = '☀';
     }
   }catch(e){}
+
+  // alamat tetap bersih: tautan kosong (href="#") tidak lagi menambah "/#" di URL
+  document.addEventListener('click', e=>{
+    const a = e.target.closest && e.target.closest('a[href="#"]');
+    if(a) e.preventDefault();
+  }, true);
+  if(location.href.endsWith('#')){
+    try{ history.replaceState(null, '', location.pathname + location.search); }catch(e){}
+  }
 
   (async function init(){
     await refreshAuthState();
