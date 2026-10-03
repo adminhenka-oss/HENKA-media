@@ -462,12 +462,13 @@
   .admin-top h1{ margin:0; font-size:1.2rem; font-weight:800; }
   .admin-top .circle-btn{ background: var(--bg-panel); border-color: var(--border); }
   .admin-toast{
-    position:sticky; top:8px; z-index:30;
+    position:sticky; top:68px; z-index:30;
     margin: 10px 20px 0; padding:10px 14px; border-radius:12px;
     background: var(--bg-raised); border:1px solid var(--accent); color: var(--text);
     font-size:0.82rem; font-weight:700; text-align:center;
   }
   .admin-tabs{
+    position:sticky; top:6px; z-index:25;
     display:flex; gap:6px; margin:14px 20px 4px; padding:4px;
     background: var(--bg-panel); border:1px solid var(--border); border-radius:999px;
   }
@@ -535,6 +536,51 @@
     border:1px solid var(--border); color: var(--text); font-size:0.88rem; margin-bottom:12px; font-family:inherit;
   }
   .admin-empty{ color: var(--text-faint); font-size:0.85rem; padding:12px 2px; }
+  .admin-search.small{ margin-bottom:8px; padding:9px 13px; font-size:0.84rem; }
+  .admin-filters{ display:flex; gap:8px; align-items:center; margin-bottom:12px; }
+  .admin-seg{ flex:1; display:flex; gap:2px; padding:3px; background: var(--bg-panel); border:1px solid var(--border); border-radius:999px; min-width:0; }
+  .admin-seg button{
+    flex:1; padding:7px 0; border:none; border-radius:999px; background:transparent;
+    color: var(--text-muted); font-size:0.72rem; font-weight:800; white-space:nowrap;
+  }
+  .admin-seg button.on{ background: var(--accent); color:#fff; }
+  .admin-sort{
+    padding:8px 10px; border-radius:999px; background: var(--bg-panel); border:1px solid var(--border);
+    color: var(--text); font-size:0.76rem; font-weight:700; font-family:inherit; flex-shrink:0;
+  }
+  .admin-more{
+    width:100%; margin:4px 0 8px; padding:12px; border-radius:999px; background:transparent;
+    border:1px dashed var(--border); color: var(--accent); font-weight:800; font-size:0.84rem;
+  }
+  .admin-more[hidden]{ display:none; }
+  .at-row{ background: var(--bg-panel); border:1px solid var(--border); border-radius:14px; margin-bottom:8px; overflow:hidden; }
+  .at-main{
+    display:flex; align-items:center; gap:10px; width:100%; padding:10px 12px;
+    background:none; border:none; text-align:left; color:inherit; font-family:inherit;
+  }
+  .at-cover{ width:36px; height:50px; border-radius:6px; flex-shrink:0; background-size:cover; background-position:center; }
+  .at-info{ flex:1; min-width:0; }
+  .at-title{ font-weight:700; font-size:0.88rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .at-sub{ display:flex; align-items:center; gap:6px; margin-top:4px; font-size:0.72rem; color: var(--text-faint); }
+  .at-flag svg{ width:17px; height:11px; display:block; border-radius:2px; }
+  .mini-badge{ font-size:0.6rem; font-weight:800; padding:2px 6px; border-radius:999px; background: var(--accent); color:#fff; }
+  .mini-badge.pop{ background: var(--ember); }
+  .at-chevron{ color: var(--text-faint); font-size:1.05rem; transition:transform .15s; flex-shrink:0; }
+  .at-row.open .at-chevron{ transform:rotate(180deg); }
+  .at-row .a-actions{ padding:2px 12px 12px; }
+  .at-row .a-actions[hidden]{ display:none; }
+  .ch-body{ border-top:1px solid var(--border); }
+  .ch-tools{ display:flex; justify-content:space-between; align-items:center; padding:9px 14px; gap:8px; }
+  .ch-add{
+    background: var(--accent); color:#fff; border:none; border-radius:999px; padding:7px 13px;
+    font-size:0.74rem; font-weight:800; white-space:nowrap; flex-shrink:0;
+  }
+  .ch-tools .ch-pages{ font-size:0.75rem; color: var(--text-faint); }
+  .ch-showall{
+    width:100%; padding:11px; background:none; border:none; border-top:1px solid var(--border);
+    color: var(--accent); font-size:0.78rem; font-weight:700;
+  }
+  .ch-mini{ width:30px; height:42px; border-radius:5px; flex-shrink:0; background-size:cover; background-position:center; }
 
   .admin-item{
     display:grid; grid-template-columns:50px minmax(0,1fr); gap:8px 12px; align-items:start;
@@ -983,8 +1029,22 @@
     <div class="admin-section-head">
       <h3>Daftar Judul <span class="admin-count" id="adminTitleCount"></span></h3>
     </div>
-    <input type="search" class="admin-search" id="adminSearch" placeholder="Cari judul…">
+    <input type="search" class="admin-search" id="adminSearch" placeholder="Cari judul atau penulis…">
+    <div class="admin-filters">
+      <div class="admin-seg" id="adminCatFilter">
+        <button type="button" class="on" data-cat="all">Semua</button>
+        <button type="button" data-cat="Manhwa">Manhwa</button>
+        <button type="button" data-cat="Manga">Manga</button>
+        <button type="button" data-cat="Manhua">Manhua</button>
+      </div>
+      <select class="admin-sort" id="adminSort" aria-label="Urutkan">
+        <option value="new">Terbaru</option>
+        <option value="az">A–Z</option>
+        <option value="za">Z–A</option>
+      </select>
+    </div>
     <div id="adminItemList"></div>
+    <button type="button" class="admin-more" id="adminMore" hidden></button>
   </section>
 
   <section class="admin-pane" id="adminPaneChapters" hidden>
@@ -993,6 +1053,7 @@
       <form class="admin-form" id="chapterImageForm">
         <div class="admin-field">
           <label>Judul</label>
+          <input type="search" class="admin-search small" id="chImgTitleSearch" placeholder="Cari judul untuk dipilih…">
           <select id="chImgTitle"></select>
         </div>
         <div class="admin-field">
@@ -1016,8 +1077,10 @@
       <div id="uploadQueue"></div>
     </div>
 
-    <div class="admin-section-head"><h3>Daftar Chapter</h3></div>
+    <div class="admin-section-head"><h3>Daftar Chapter <span class="admin-count" id="chapterTitleCount"></span></h3></div>
+    <input type="search" class="admin-search" id="chapterSearch" placeholder="Cari judul…">
     <div id="chapterImageList"></div>
+    <button type="button" class="admin-more" id="chapterMore" hidden></button>
   </section>
 </div>
 
@@ -1134,6 +1197,7 @@
 
   // Gambar disimpan di R2 (alamat pub-xxxx.r2.dev). Sebagian operator seluler memblokir alamat itu,
   // jadi saat ditampilkan, alamatnya dialihkan lewat domain Henka sendiri (/img/...), yang diteruskan oleh vercel.json.
+  let titleSeq = 0;
   const USE_IMAGE_PROXY = true;
   const R2_HOST_RE = /^https:\/\/pub-[a-z0-9]+\.r2\.dev\//i;
   function proxyUrl(u){
@@ -1157,6 +1221,8 @@
       author: row.author,
       genres: row.genres || [],
       category: row.category || null,
+      createdAt: row.created_at ? (Date.parse(row.created_at) || 0) : 0,
+      seq: ++titleSeq,
       synopsis: row.synopsis || '',
       artist: row.artist || '',
       isRecommended: !!row.is_recommended,
@@ -1236,7 +1302,8 @@
 
   function selectGenre(genre){
     const rec = titles[genre].filter(it=>it.isRecommended);
-    const upd = [...titles[genre]].reverse();
+    const UPDATE_HOME_LIMIT = 9;   // 3 baris x 3 kolom di beranda; sisanya lewat "Lihat semua"
+    const upd = [...titles[genre]].reverse().slice(0, UPDATE_HOME_LIMIT);
     document.getElementById('recRow').innerHTML =
       rec.map((it,i)=>cardHTML(it, i===0)).join('') || `<div class="empty-note">Belum ada rekomendasi di ${genre}.</div>`;
     document.getElementById('updateGrid').innerHTML =
@@ -1930,31 +1997,58 @@
     ["#4338ca","#160a26"], ["#6b2fa0","#190b2b"], ["#8455d6","#1f0f33"]
   ];
 
-  function renderAdminList(){
+  const ADMIN_PAGE = 20;
+  const adminState = { cat:'all', sort:'new', limit: ADMIN_PAGE };
+  const adminOpenIds = new Set();
+
+  function adminFiltered(){
     const q = (document.getElementById('adminSearch').value || '').trim().toLowerCase();
-    const all = [];
-    Object.keys(titles).forEach(cat=>{
-      titles[cat].forEach(it=>{ if(it.isCustom) all.push({cat, it}); });
-    });
-    const items = q ? all.filter(({it})=>it.t.toLowerCase().includes(q)) : all;
-    document.getElementById('adminTitleCount').textContent = all.length ? `(${all.length})` : '';
+    let all = [];
+    Object.keys(titles).forEach(cat=>titles[cat].forEach(it=>{ if(it.isCustom) all.push({ cat, it }); }));
+    const total = all.length;
+    if(adminState.cat !== 'all') all = all.filter(x=>x.cat === adminState.cat);
+    if(q) all = all.filter(x=>x.it.t.toLowerCase().includes(q) || (x.it.author || '').toLowerCase().includes(q));
+    if(adminState.sort === 'az') all.sort((a,b)=>a.it.t.localeCompare(b.it.t));
+    else if(adminState.sort === 'za') all.sort((a,b)=>b.it.t.localeCompare(a.it.t));
+    else all.sort((a,b)=>((b.it.createdAt || 0) - (a.it.createdAt || 0)) || (b.it.seq - a.it.seq));
+    return { all, total };
+  }
+
+  function renderAdminList(){
+    const { all, total } = adminFiltered();
+    const shown = all.slice(0, adminState.limit);
+    document.getElementById('adminTitleCount').textContent =
+      total ? (all.length === total ? `(${total})` : `(${all.length} dari ${total})`) : '';
     const wrap = document.getElementById('adminItemList');
-    if(all.length === 0){
+    const more = document.getElementById('adminMore');
+    if(total === 0){
       wrap.innerHTML = `<div class="admin-empty">Belum ada judul. Ketuk "+ Tambah judul baru" di atas.</div>`;
+      more.hidden = true;
       return;
     }
-    if(items.length === 0){
+    if(all.length === 0){
       wrap.innerHTML = `<div class="admin-empty">Tidak ada judul yang cocok.</div>`;
+      more.hidden = true;
       return;
     }
-    wrap.innerHTML = items.map(({cat, it})=>`
-      <div class="admin-item">
-        <div class="a-cover" style="${coverStyle(it)}"></div>
-        <div class="a-info">
-          <div class="a-title">${it.t}</div>
-          <div class="a-sub">${cat} · ${it.ch} · ${it.status === 'Ongoing' ? 'Berlanjut' : 'Tamat'}</div>
-        </div>
-        <div class="a-actions" data-cat="${cat}" data-id="${it.supabaseId}">
+    wrap.innerHTML = shown.map(({ cat, it })=>{
+      const open = adminOpenIds.has(String(it.supabaseId));
+      return `
+      <div class="at-row ${open ? 'open' : ''}">
+        <button type="button" class="at-main" data-toggle="1">
+          <div class="at-cover" style="${coverStyle(it)}"></div>
+          <div class="at-info">
+            <div class="at-title">${it.t}</div>
+            <div class="at-sub">
+              <span class="at-flag">${FLAGS[cat] || ''}</span>
+              <span>${cat} · ${it.ch}</span>
+              ${it.isRecommended ? '<span class="mini-badge">REK</span>' : ''}
+              ${it.isPopular ? '<span class="mini-badge pop">POP</span>' : ''}
+            </div>
+          </div>
+          <span class="at-chevron">⌄</span>
+        </button>
+        <div class="a-actions" data-cat="${cat}" data-id="${it.supabaseId}" ${open ? '' : 'hidden'}>
           <div class="a-row">
             <button type="button" class="a-flag ${it.isRecommended ? 'on' : ''}" data-flag="rec">${it.isRecommended ? '✓ ' : ''}Rekomendasi</button>
             <button type="button" class="a-flag ${it.isPopular ? 'on' : ''}" data-flag="pop">${it.isPopular ? '✓ ' : ''}Populer</button>
@@ -1964,10 +2058,35 @@
             <button type="button" class="a-delete">Hapus</button>
           </div>
         </div>
-      </div>`).join('');
+      </div>`;
+    }).join('');
+    const rest = all.length - shown.length;
+    more.hidden = rest <= 0;
+    if(rest > 0) more.textContent = `Tampilkan ${Math.min(ADMIN_PAGE, rest)} lagi (sisa ${rest})`;
   }
 
-  document.getElementById('adminSearch').addEventListener('input', renderAdminList);
+  document.getElementById('adminSearch').addEventListener('input', ()=>{ adminState.limit = ADMIN_PAGE; renderAdminList(); });
+  document.getElementById('adminSort').addEventListener('change', e=>{ adminState.sort = e.target.value; adminState.limit = ADMIN_PAGE; renderAdminList(); });
+  document.getElementById('adminCatFilter').addEventListener('click', e=>{
+    const b = e.target.closest('button[data-cat]');
+    if(!b) return;
+    adminState.cat = b.dataset.cat;
+    adminState.limit = ADMIN_PAGE;
+    document.querySelectorAll('#adminCatFilter button').forEach(x=>x.classList.toggle('on', x === b));
+    renderAdminList();
+  });
+  document.getElementById('adminMore').addEventListener('click', ()=>{ adminState.limit += ADMIN_PAGE; renderAdminList(); });
+  document.getElementById('adminItemList').addEventListener('click', e=>{
+    const main = e.target.closest('.at-main');
+    if(!main) return;
+    const row = main.closest('.at-row');
+    const acts = row.querySelector('.a-actions');
+    const id = String(acts.dataset.id);
+    const open = !row.classList.contains('open');
+    row.classList.toggle('open', open);
+    acts.hidden = !open;
+    if(open) adminOpenIds.add(id); else adminOpenIds.delete(id);
+  });
 
   document.getElementById('adminTabs').addEventListener('click', e=>{
     const btn = e.target.closest('.admin-tab');
@@ -2027,61 +2146,120 @@
     }
   }
 
-  async function listChapterImageEntries(){
-    const dbTitles = allTitles().filter(it=>it.supabaseId);
-    const out = [];
-    for(const it of dbTitles){
-      const { data, error } = await sb
-        .from('chapters')
-        .select('chapter_num, image_urls')
-        .eq('title_id', it.supabaseId)
-        .order('chapter_num', { ascending:true });
-      if(error || !data) continue;
-      data.forEach(row=> out.push({ title: it.t, titleId: it.supabaseId, num: row.chapter_num, count: (row.image_urls || []).length }));
-    }
-    return out;
-  }
-
   function populateAdminTitleSelect(){
-    const dbTitles = allTitles().filter(it=>it.supabaseId);
+    const dbTitles = allTitles().filter(it=>it.supabaseId).sort((a,b)=>a.t.localeCompare(b.t));
     const select = document.getElementById('chImgTitle');
+    const q = (document.getElementById('chImgTitleSearch').value || '').trim().toLowerCase();
+    const prev = select.value;
     if(dbTitles.length === 0){
       select.innerHTML = `<option value="">Belum ada judul di database — tambah lewat "Tambah Judul" dulu</option>`;
       return;
     }
-    select.innerHTML = dbTitles.map(it=>`<option value="${it.supabaseId}">${it.t}</option>`).join('');
+    const list = q ? dbTitles.filter(it=>it.t.toLowerCase().includes(q)) : dbTitles;
+    if(list.length === 0){
+      select.innerHTML = `<option value="">Tidak ada judul yang cocok</option>`;
+      return;
+    }
+    select.innerHTML = list.map(it=>`<option value="${it.supabaseId}">${it.t}</option>`).join('');
+    if(list.some(it=>String(it.supabaseId) === String(prev))) select.value = prev;
+  }
+  document.getElementById('chImgTitleSearch').addEventListener('input', populateAdminTitleSelect);
+
+  const CH_PAGE = 20;
+  const chapterState = { limit: CH_PAGE };
+  const chapterOpenIds = new Set();
+  const chapterShowAll = new Set();
+  const chapterLoading = new Set();
+
+  function chapterTitleList(){
+    const q = (document.getElementById('chapterSearch').value || '').trim().toLowerCase();
+    const all = allTitles().filter(it=>it.supabaseId).sort((a,b)=>a.t.localeCompare(b.t));
+    return { all: q ? all.filter(it=>it.t.toLowerCase().includes(q)) : all, total: all.length };
   }
 
   async function renderChapterImageList(){
     const wrap = document.getElementById('chapterImageList');
-    wrap.innerHTML = `<div class="admin-empty">Memuat…</div>`;
-    const entries = await listChapterImageEntries();
-    if(entries.length === 0){
-      wrap.innerHTML = `<div class="admin-empty">Belum ada halaman chapter yang ditambahkan.</div>`;
+    const more = document.getElementById('chapterMore');
+    const { all, total } = chapterTitleList();
+    const shown = all.slice(0, chapterState.limit);
+    document.getElementById('chapterTitleCount').textContent =
+      total ? (all.length === total ? `(${total} judul)` : `(${all.length} dari ${total})`) : '';
+    if(total === 0){
+      wrap.innerHTML = `<div class="admin-empty">Belum ada judul. Tambahkan dulu di tab Judul.</div>`;
+      more.hidden = true;
       return;
     }
-    const groups = new Map();
-    entries.forEach(en=>{
-      if(!groups.has(en.titleId)) groups.set(en.titleId, { title: en.title, list: [] });
-      groups.get(en.titleId).list.push(en);
-    });
-    wrap.innerHTML = [...groups.values()].map((g, idx)=>{
-      const rows = g.list.sort((a,b)=>Number(b.num) - Number(a.num)).map(en=>`
+    if(all.length === 0){
+      wrap.innerHTML = `<div class="admin-empty">Tidak ada judul yang cocok.</div>`;
+      more.hidden = true;
+      return;
+    }
+    wrap.innerHTML = shown.map(it=>{
+      const id = String(it.supabaseId);
+      const open = chapterOpenIds.has(id);
+      return `
+      <details class="ch-group" data-title-id="${id}" ${open ? 'open' : ''}>
+        <summary>
+          <span class="ch-mini" style="${coverStyle(it)}"></span>
+          <span class="ch-group-title">${it.t}</span>
+          <span class="ch-group-count" id="chc-${id}"></span>
+        </summary>
+        <div class="ch-body" id="chb-${id}">${open ? '<div class="admin-empty">Memuat…</div>' : ''}</div>
+      </details>`;
+    }).join('');
+    const rest = all.length - shown.length;
+    more.hidden = rest <= 0;
+    if(rest > 0) more.textContent = `Tampilkan ${Math.min(CH_PAGE, rest)} lagi (sisa ${rest})`;
+    shown.forEach(it=>{ if(chapterOpenIds.has(String(it.supabaseId))) loadChapterGroup(String(it.supabaseId)); });
+  }
+
+  async function loadChapterGroup(titleId){
+    if(chapterLoading.has(titleId)) return;
+    const body = document.getElementById('chb-' + titleId);
+    if(!body) return;
+    chapterLoading.add(titleId);
+    body.innerHTML = `<div class="admin-empty" style="padding:12px 14px">Memuat…</div>`;
+    try{
+      const { data, error } = await sb.from('chapters')
+        .select('chapter_num, image_urls')
+        .eq('title_id', titleId)
+        .order('chapter_num', { ascending:false });
+      if(error) throw error;
+      const list = (data || []).map(r=>({ num: r.chapter_num, count: (r.image_urls || []).length }));
+      list.sort((a,b)=>Number(b.num) - Number(a.num));
+      const countEl = document.getElementById('chc-' + titleId);
+      if(countEl) countEl.textContent = list.length ? `${list.length} chapter` : 'kosong';
+      const showAll = chapterShowAll.has(titleId);
+      const visible = showAll ? list : list.slice(0, 10);
+      const rows = visible.map(en=>`
         <div class="ch-row">
           <span class="ch-num">Chapter ${en.num}</span>
           <span class="ch-pages">${en.count} halaman</span>
-          <button type="button" class="a-delete" data-del-title-id="${en.titleId}" data-del-num="${en.num}">Hapus</button>
+          <button type="button" class="a-delete" data-del-title-id="${titleId}" data-del-num="${en.num}">Hapus</button>
         </div>`).join('');
-      return `
-        <details class="ch-group" ${idx === 0 ? 'open' : ''}>
-          <summary>
-            <span class="ch-group-title">${g.title}</span>
-            <span class="ch-group-count">${g.list.length} chapter</span>
-          </summary>
-          ${rows}
-        </details>`;
-    }).join('');
+      body.innerHTML = `
+        <div class="ch-tools">
+          <span class="ch-pages">${list.length ? 'Chapter terbaru di atas' : 'Belum ada chapter'}</span>
+          <button type="button" class="ch-add" data-title-id="${titleId}">+ Tambah chapter</button>
+        </div>
+        ${rows}
+        ${(!showAll && list.length > 10) ? `<button type="button" class="ch-showall" data-title-id="${titleId}">Tampilkan semua (${list.length})</button>` : ''}`;
+    }catch(err){
+      body.innerHTML = `<div class="admin-empty" style="padding:12px 14px">Gagal memuat chapter: ${err.message || err}</div>`;
+    } finally {
+      chapterLoading.delete(titleId);
+    }
   }
+
+  document.getElementById('chapterSearch').addEventListener('input', ()=>{ chapterState.limit = CH_PAGE; renderChapterImageList(); });
+  document.getElementById('chapterMore').addEventListener('click', ()=>{ chapterState.limit += CH_PAGE; renderChapterImageList(); });
+  document.getElementById('chapterImageList').addEventListener('toggle', e=>{
+    const d = e.target;
+    if(!d || !d.classList || !d.classList.contains('ch-group')) return;
+    const id = d.dataset.titleId;
+    if(d.open){ chapterOpenIds.add(id); loadChapterGroup(id); }
+    else chapterOpenIds.delete(id);
+  }, true);
 
   // ===== Antrian upload chapter =====
   const uploadJobs = [];
@@ -2293,18 +2471,39 @@
   });
 
   document.getElementById('chapterImageList').addEventListener('click', async e=>{
+    const toast = document.getElementById('adminToast');
+
+    const add = e.target.closest('.ch-add');
+    if(add){
+      document.getElementById('chImgTitleSearch').value = '';
+      populateAdminTitleSelect();
+      document.getElementById('chImgTitle').value = add.dataset.titleId;
+      const card = document.getElementById('chapterFormCard');
+      card.open = true;
+      card.scrollIntoView({ behavior:'smooth', block:'start' });
+      document.getElementById('chImgNum').focus({ preventScroll:true });
+      return;
+    }
+
+    const showAll = e.target.closest('.ch-showall');
+    if(showAll){
+      chapterShowAll.add(showAll.dataset.titleId);
+      loadChapterGroup(showAll.dataset.titleId);
+      return;
+    }
+
     const btn = e.target.closest('.a-delete[data-del-title-id]');
     if(!btn) return;
+    if(!confirm('Hapus Chapter ' + btn.dataset.delNum + '? Halamannya tidak bisa dikembalikan.')) return;
     const { error } = await sb.from('chapters')
       .delete()
       .eq('title_id', btn.dataset.delTitleId)
       .eq('chapter_num', btn.dataset.delNum);
     if(error){
-      const toast = document.getElementById('adminToast');
       toast.textContent = 'Gagal menghapus: ' + error.message;
       toast.hidden = false;
     }
-    renderChapterImageList();
+    loadChapterGroup(btn.dataset.delTitleId);
   });
 
   // ===== Pembaca chapter =====
