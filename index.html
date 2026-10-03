@@ -219,7 +219,7 @@
   }
   .chip.rating{ color: var(--ember); border-color: var(--ember-soft); }
   .chip.chip-clickable{ cursor:pointer; }
-  .info-table{ display:flex; flex-direction:column; gap:16px; margin:24px 0 28px; }
+  .info-table{ display:flex; flex-direction:column; gap:16px; margin:24px 0 26px; }
   .info-row{ display:flex; gap:14px; align-items:flex-start; }
   .info-label{ width:76px; flex-shrink:0; font-weight:800; font-size:1rem; color: var(--text); padding-top:9px; }
   .info-vals{ flex:1; min-width:0; display:flex; flex-wrap:wrap; gap:8px; }
@@ -791,10 +791,10 @@
       <span id="detailViews"></span>
       <span id="detailBookmarks"></span>
     </div>
+    <div class="info-table" id="detailInfo"></div>
     <h3 class="detail-subhead">Sinopsis</h3>
     <p class="synopsis clamped" id="detailSynopsis"></p>
     <button class="expand-btn" id="synopsisToggle">⌄</button>
-    <div class="info-table" id="detailInfo"></div>
     <div class="chapter-head">
       <h3 class="detail-subhead" style="margin:0;">Daftar Chapter</h3>
       <button class="sort-btn" id="sortToggle">↓ Terbaru</button>
