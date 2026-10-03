@@ -207,10 +207,13 @@
   .circle-btn svg{ width:19px; height:19px; }
   .detail-body{ padding: 4px 20px 24px; margin-top:-40px; position:relative; z-index:2; }
   .status-line{
-    display:flex; align-items:center; gap:8px; color: var(--accent);
-    font-weight:700; font-size:0.9rem; margin-bottom:10px;
+    display:flex; align-items:center; gap:8px; margin-bottom:8px;
+    font-weight:700; font-size:0.88rem; color: var(--accent);
   }
-  .detail-title{ font-size:1.55rem; font-weight:800; line-height:1.25; margin:0 0 14px; }
+  .status-dot{ width:8px; height:8px; border-radius:50%; background: var(--accent); flex-shrink:0; }
+  .meta-sep{ color: var(--text-faint); font-weight:400; }
+  .rating-inline{ color: var(--ember); font-weight:800; }
+  .detail-title{ font-size:1.55rem; font-weight:800; line-height:1.25; margin:0 0 18px; }
   .chip-row{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px; }
   .chip{
     padding:7px 14px; border-radius: var(--radius-pill); border:1px solid var(--border);
@@ -219,14 +222,19 @@
   }
   .chip.rating{ color: var(--ember); border-color: var(--ember-soft); }
   .chip.chip-clickable{ cursor:pointer; }
-  .info-table{ display:flex; flex-direction:column; gap:16px; margin:24px 0 26px; }
-  .info-row{ display:flex; gap:14px; align-items:flex-start; }
-  .info-label{ width:76px; flex-shrink:0; font-weight:800; font-size:1rem; color: var(--text); padding-top:9px; }
-  .info-vals{ flex:1; min-width:0; display:flex; flex-wrap:wrap; gap:8px; }
+  .info-table{
+    display:flex; flex-direction:column; gap:12px; margin:22px 0 26px; padding:16px;
+    background: var(--bg-panel); border:1px solid var(--border); border-radius:16px;
+  }
+  .info-row{ display:flex; gap:12px; align-items:flex-start; }
+  .info-label{ width:62px; flex-shrink:0; font-weight:800; font-size:0.88rem; color: var(--text); padding-top:7px; }
+  .info-vals{ flex:1; min-width:0; display:flex; flex-wrap:wrap; gap:6px; }
   .info-chip{
     background: var(--bg-raised); border:1px solid var(--border); color: var(--text);
-    padding:9px 15px; border-radius:11px; font-size:0.92rem; font-weight:500; line-height:1.25;
+    padding:6px 12px; border-radius:9px; font-size:0.84rem; font-weight:500; line-height:1.3;
   }
+  :root[data-theme="light"] .info-chip{ background: var(--bg-panel-2); }
+  .info-chip.chip-clickable{ cursor:pointer; }
   .info-chip.chip-clickable:active{ opacity:0.65; }
   .action-row{ display:flex; gap:12px; margin-bottom:8px; }
   .btn-read, .btn-bookmark{
@@ -237,18 +245,20 @@
   .btn-bookmark{ background: var(--accent-soft); color: var(--accent); transition: background .15s, color .15s; }
   .btn-bookmark.active{ background: var(--accent); color:#fff; }
   .stat-row{
-    display:flex; justify-content:space-around; color: var(--text-faint);
-    font-size:0.8rem; margin: 10px 0 22px;
+    display:grid; grid-template-columns:1fr 1fr; text-align:center; color: var(--text-faint);
+    font-size:0.78rem; margin: 10px 0 0;
   }
   .detail-subhead{ font-size:1.1rem; font-weight:800; margin: 0 0 10px; }
   .synopsis{ color: var(--text-muted); line-height:1.65; font-size:0.9rem; margin:0; white-space:pre-line; }
   .synopsis.clamped{
-    display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;
+    display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden;
   }
   .expand-btn{
-    display:block; margin:8px auto 22px; background:none; border:none;
-    color: var(--text-faint); font-size:1.15rem;
+    display:block; margin:8px 0 0; padding:4px 0; background:none; border:none;
+    color: var(--accent); font-size:0.84rem; font-weight:700;
   }
+  .expand-btn[hidden]{ display:none; }
+  .synopsis-block{ margin-bottom:26px; }
   .chapter-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
   .sort-btn{ background:none; border:none; color:var(--accent); font-weight:700; font-size:0.85rem; }
   .chapter-list{ display:flex; flex-direction:column; }
@@ -780,9 +790,13 @@
     </div>
   </div>
   <div class="detail-body">
-    <div class="status-line">🗓 <span id="detailStatus">Masih berlanjut</span></div>
+    <div class="status-line">
+      <span class="status-dot"></span>
+      <span id="detailStatus">Masih berlanjut</span>
+      <span class="meta-sep">•</span>
+      <span class="rating-inline" id="detailChips"></span>
+    </div>
     <h1 class="detail-title" id="detailTitle"></h1>
-    <div class="chip-row" id="detailChips"></div>
     <div class="action-row">
       <button class="btn-read" id="detailReadBtn">Baca Sekarang</button>
       <button class="btn-bookmark" id="detailBookmarkBtn">Bookmarks</button>
@@ -792,9 +806,11 @@
       <span id="detailBookmarks"></span>
     </div>
     <div class="info-table" id="detailInfo"></div>
-    <h3 class="detail-subhead">Sinopsis</h3>
-    <p class="synopsis clamped" id="detailSynopsis"></p>
-    <button class="expand-btn" id="synopsisToggle">⌄</button>
+    <div class="synopsis-block">
+      <h3 class="detail-subhead">Sinopsis</h3>
+      <p class="synopsis clamped" id="detailSynopsis"></p>
+      <button class="expand-btn" id="synopsisToggle" hidden>Selengkapnya ⌄</button>
+    </div>
     <div class="chapter-head">
       <h3 class="detail-subhead" style="margin:0;">Daftar Chapter</h3>
       <button class="sort-btn" id="sortToggle">↓ Terbaru</button>
@@ -1584,7 +1600,7 @@
       item.status === 'Ongoing' ? 'Masih berlanjut' : 'Tamat';
     document.getElementById('detailTitle').textContent = item.t;
 
-    document.getElementById('detailChips').innerHTML = `<span class="chip rating">★ ${item.rating}</span>`;
+    document.getElementById('detailChips').textContent = '★ ' + item.rating;
 
     {
       const rows = [];
@@ -1615,9 +1631,11 @@
     bookmarkBtn._paint = paintStats;
 
     const synEl = document.getElementById('detailSynopsis');
-    synEl.textContent = item.synopsis || 'Belum ada sinopsis.';
+    const synText = (item.synopsis || '').replace(/\r/g, '').trim().replace(/\n{3,}/g, '\n\n');
+    synEl.textContent = synText || 'Belum ada sinopsis.';
     synEl.classList.add('clamped');
-    document.getElementById('synopsisToggle').textContent = '⌄';
+    document.getElementById('synopsisToggle').textContent = 'Selengkapnya ⌄';
+    fitSynopsis();
 
     currentChapters = item.supabaseId ? await buildChaptersRemote(item) : buildChapters(item);
     chapterAscending = false;
@@ -2950,10 +2968,23 @@
     if(this._paint) this._paint();
   });
 
+  // tombol "Selengkapnya" hanya muncul kalau sinopsisnya memang terpotong
+  function fitSynopsis(){
+    const synEl = document.getElementById('detailSynopsis');
+    const btn = document.getElementById('synopsisToggle');
+    const measure = ()=>{
+      if(!synEl.classList.contains('clamped')) return;
+      btn.hidden = !(synEl.scrollHeight > synEl.clientHeight + 2);
+    };
+    btn.hidden = true;
+    requestAnimationFrame(measure);
+    setTimeout(measure, 250);
+  }
+
   document.getElementById('synopsisToggle').addEventListener('click', function(){
     const synEl = document.getElementById('detailSynopsis');
     const collapsed = synEl.classList.toggle('clamped');
-    this.textContent = collapsed ? '⌄' : '⌃';
+    this.textContent = collapsed ? 'Selengkapnya ⌄' : 'Tutup ⌃';
   });
 
   document.getElementById('sortToggle').addEventListener('click', function(){
