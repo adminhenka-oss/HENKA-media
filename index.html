@@ -456,6 +456,32 @@
     border-radius:999px; padding:8px 13px; font-weight:700; font-size:0.8rem;
   }
   .history-bar .danger{ background: var(--ember); border-color: transparent; color:#fff; }
+  .featured{ position:relative; margin:6px 0 24px; padding:10px 0 0; }
+  .feat-ambient{
+    position:absolute; z-index:0; top:-6px; bottom:6px; left:-20px; right:-20px;
+    background-size:cover; background-position:center; filter: blur(30px) saturate(1.2); opacity:0.5;
+    transition: opacity .35s ease; pointer-events:none;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 22%, #000 70%, transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0, #000 22%, #000 70%, transparent 100%);
+  }
+  .feat-viewport{
+    position:relative; z-index:1; overflow:hidden; border-radius:26px; touch-action:pan-y;
+    box-shadow:0 18px 40px -14px rgba(0,0,0,0.65); user-select:none; -webkit-user-select:none;
+  }
+  .feat-track{ display:flex; transition: transform .55s cubic-bezier(.22,.8,.3,1); will-change:transform; }
+  .feat-slide{ flex:0 0 100%; position:relative; aspect-ratio:1.68 / 1; cursor:pointer; }
+  .feat-img{ position:absolute; inset:0; background-size:cover !important; background-position:center 28% !important; }
+  .feat-shade{ position:absolute; inset:0; background:linear-gradient(to top, rgba(0,0,0,0.86) 0%, rgba(0,0,0,0.4) 42%, rgba(0,0,0,0) 72%); }
+  .feat-info{ position:absolute; left:20px; right:20px; bottom:18px; color:#fff; }
+  .feat-title{
+    font-size:1.4rem; font-weight:800; line-height:1.2; text-shadow:0 2px 10px rgba(0,0,0,0.5);
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+  }
+  .feat-views{ display:flex; align-items:center; gap:8px; margin-top:8px; color:#e8e1ff; font-size:0.9rem; font-weight:600; }
+  .feat-views svg{ width:20px; height:20px; stroke:#b9a7ff; fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+  .feat-dots{ position:relative; z-index:1; display:flex; justify-content:center; gap:8px; margin-top:14px; }
+  .feat-dot{ width:8px; height:8px; padding:0; border:none; border-radius:999px; background: var(--text-faint); opacity:0.6; transition: width .25s ease, opacity .25s; }
+  .feat-dot.on{ width:30px; background: var(--accent); opacity:1; }
   /* Admin panel */
   .admin-view{ background: var(--bg); min-height:100vh; padding-bottom:40px; }
   .admin-top{ display:flex; align-items:center; gap:12px; padding:20px 20px 8px; }
@@ -565,6 +591,7 @@
   .at-flag svg{ width:17px; height:11px; display:block; border-radius:2px; }
   .mini-badge{ font-size:0.6rem; font-weight:800; padding:2px 6px; border-radius:999px; background: var(--accent); color:#fff; }
   .mini-badge.pop{ background: var(--ember); }
+  .mini-badge.feat{ background:#3ecf8e; color:#06281a; }
   .at-chevron{ color: var(--text-faint); font-size:1.05rem; transition:transform .15s; flex-shrink:0; }
   .at-row.open .at-chevron{ transform:rotate(180deg); }
   .at-row .a-actions{ padding:2px 12px 12px; }
@@ -787,6 +814,14 @@
       <input type="text" id="searchInput" placeholder="Cari judul, penulis, genre…" readonly>
     </div>
   </div>
+
+  <section class="featured" id="featuredWrap" hidden>
+    <div class="feat-ambient" id="featAmbient"></div>
+    <div class="feat-viewport" id="featViewport">
+      <div class="feat-track" id="featTrack"></div>
+    </div>
+    <div class="feat-dots" id="featDots"></div>
+  </section>
 
   <section>
     <div class="section-head">
@@ -1019,6 +1054,7 @@
           <div class="admin-group-title">Tampil di beranda</div>
           <label class="admin-switch"><span>Rekomendasi</span><input type="checkbox" id="admRecommended"></label>
           <label class="admin-switch"><span>Populer</span><input type="checkbox" id="admPopular"></label>
+          <label class="admin-switch"><span>Banner beranda (berganti otomatis)</span><input type="checkbox" id="admFeatured"></label>
         </div>
 
         <button type="submit" class="admin-submit" id="admSubmitBtn">Tambah Judul</button>
@@ -1226,6 +1262,7 @@
       synopsis: row.synopsis || '',
       artist: row.artist || '',
       isRecommended: !!row.is_recommended,
+      isFeatured: !!row.is_featured,
       isPopular: !!row.is_popular,
       isCustom: true
     };
@@ -1378,6 +1415,112 @@
     document.getElementById('continueRow').innerHTML =
       html || `<div class="empty-note">Belum ada riwayat baca.</div>`;
   }
+
+  // ===== Banner unggulan di beranda (berganti otomatis) =====
+  const FEATURED_MAX = 8;
+  const FEATURED_INTERVAL = 4500;
+  const EYE_ICON = '<svg viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+  let featItems = [], featIndex = 0, featTimer = null;
+
+  function featuredItems(){
+    const all = [...titles.Manhwa, ...titles.Manga, ...titles.Manhua];
+    let list = all.filter(it=>it.isFeatured);
+    if(list.length === 0) list = all.filter(it=>it.isRecommended);   // belum ada yang ditandai Banner: pakai Rekomendasi
+    list.sort((a,b)=>((b.createdAt || 0) - (a.createdAt || 0)) || (b.seq - a.seq));
+    return list.slice(0, FEATURED_MAX);
+  }
+
+  function setFeaturedAmbient(it){
+    const amb = document.getElementById('featAmbient');
+    amb.style.opacity = '0';
+    setTimeout(()=>{
+      amb.style.backgroundImage = it.cover ? `url('${it.cover}')` : `linear-gradient(150deg, ${it.c[0]}, ${it.c[1]})`;
+      amb.style.opacity = '0.5';
+    }, 220);
+  }
+
+  function goFeatured(i, animate = true){
+    if(!featItems.length) return;
+    const n = featItems.length;
+    featIndex = ((i % n) + n) % n;
+    const track = document.getElementById('featTrack');
+    if(!animate) track.style.transition = 'none';
+    track.style.transform = `translateX(-${featIndex * 100}%)`;
+    if(!animate){ void track.offsetWidth; track.style.transition = ''; }
+    document.querySelectorAll('#featDots .feat-dot').forEach((d, k)=>d.classList.toggle('on', k === featIndex));
+    setFeaturedAmbient(featItems[featIndex]);
+  }
+
+  function stopFeatured(){ clearInterval(featTimer); featTimer = null; }
+  function startFeatured(){
+    stopFeatured();
+    if(featItems.length < 2) return;
+    featTimer = setInterval(()=>{
+      if(document.hidden) return;
+      const main = document.querySelector('main');
+      if(!main || main.style.display === 'none' || activeTab !== 'home') return;
+      goFeatured(featIndex + 1);
+    }, FEATURED_INTERVAL);
+  }
+
+  function renderFeatured(){
+    const wrap = document.getElementById('featuredWrap');
+    featItems = featuredItems();
+    if(!featItems.length){ wrap.hidden = true; stopFeatured(); return; }
+    wrap.hidden = false;
+    document.getElementById('featTrack').innerHTML = featItems.map(it=>`
+      <div class="feat-slide">
+        <div class="feat-img" style="${coverStyle(it)}"></div>
+        <div class="feat-shade"></div>
+        <div class="feat-info">
+          <div class="feat-title">${it.t}</div>
+          <div class="feat-views">${EYE_ICON}<span>${it.views} views</span></div>
+        </div>
+      </div>`).join('');
+    document.getElementById('featDots').innerHTML = featItems.length > 1
+      ? featItems.map((_, i)=>`<button type="button" class="feat-dot" data-i="${i}" aria-label="Banner ${i + 1}"></button>`).join('')
+      : '';
+    goFeatured(Math.min(featIndex, featItems.length - 1), false);
+    startFeatured();
+  }
+
+  (function setupFeatured(){
+    const vp = document.getElementById('featViewport');
+    const track = document.getElementById('featTrack');
+    let startX = 0, dx = 0, dragging = false, moved = false;
+    vp.addEventListener('pointerdown', e=>{
+      if(!featItems.length) return;
+      dragging = true; moved = false; dx = 0; startX = e.clientX;
+      stopFeatured();
+      track.style.transition = 'none';
+    });
+    vp.addEventListener('pointermove', e=>{
+      if(!dragging) return;
+      dx = e.clientX - startX;
+      if(Math.abs(dx) > 8) moved = true;
+      if(moved) track.style.transform = `translateX(calc(${-featIndex * 100}% + ${dx}px))`;
+    });
+    function end(){
+      if(!dragging) return;
+      dragging = false;
+      track.style.transition = '';
+      const w = vp.clientWidth || 1;
+      if(moved && dx < -w * 0.15) goFeatured(featIndex + 1);
+      else if(moved && dx > w * 0.15) goFeatured(featIndex - 1);
+      else goFeatured(featIndex);
+      if(!moved && featItems[featIndex]) openDetail(featItems[featIndex].t);
+      startFeatured();
+    }
+    vp.addEventListener('pointerup', end);
+    vp.addEventListener('pointercancel', ()=>{ moved = false; dx = 0; end(); });
+    vp.addEventListener('pointerleave', ()=>{ if(dragging && moved) end(); });
+    document.getElementById('featDots').addEventListener('click', e=>{
+      const b = e.target.closest('.feat-dot');
+      if(!b) return;
+      goFeatured(Number(b.dataset.i));
+      startFeatured();
+    });
+  })();
 
   function allTitles(){ return [...titles.Manhwa, ...titles.Manga, ...titles.Manhua]; }
 
@@ -2044,6 +2187,7 @@
               <span>${cat} · ${it.ch}</span>
               ${it.isRecommended ? '<span class="mini-badge">REK</span>' : ''}
               ${it.isPopular ? '<span class="mini-badge pop">POP</span>' : ''}
+              ${it.isFeatured ? '<span class="mini-badge feat">BNR</span>' : ''}
             </div>
           </div>
           <span class="at-chevron">⌄</span>
@@ -2052,6 +2196,7 @@
           <div class="a-row">
             <button type="button" class="a-flag ${it.isRecommended ? 'on' : ''}" data-flag="rec">${it.isRecommended ? '✓ ' : ''}Rekomendasi</button>
             <button type="button" class="a-flag ${it.isPopular ? 'on' : ''}" data-flag="pop">${it.isPopular ? '✓ ' : ''}Populer</button>
+            <button type="button" class="a-flag ${it.isFeatured ? 'on' : ''}" data-flag="feat">${it.isFeatured ? '✓ ' : ''}Banner</button>
           </div>
           <div class="a-row">
             <button type="button" class="a-edit">Edit</button>
@@ -2803,6 +2948,8 @@
 
   function friendlyError(err){
     const m = (err && err.message) ? err.message : String(err);
+    if(/is_featured/i.test(m))
+      return 'Kolom banner belum ada di database. Jalankan admin-banner.sql di Supabase SQL Editor dulu.';
     if(/artist/i.test(m))
       return 'Kolom artis belum ada di database. Jalankan admin-artis.sql di Supabase SQL Editor dulu.';
     if(/is_recommended|is_popular|synopsis|schema cache/i.test(m))
@@ -2823,6 +2970,7 @@
   function refreshHomeLists(){
     const activeGenre = document.querySelector('#genreTabs .tab.active')?.dataset.genre || 'Manhwa';
     selectGenre(activeGenre);
+    renderFeatured();
   }
 
   function resetEditState(){
@@ -2850,6 +2998,7 @@
     document.getElementById('admSynopsis').value = it.synopsis || '';
     document.getElementById('admArtist').value = it.artist || '';
     document.getElementById('admRecommended').checked = !!it.isRecommended;
+    document.getElementById('admFeatured').checked = !!it.isFeatured;
     document.getElementById('admPopular').checked = !!it.isPopular;
     document.getElementById('admSubmitBtn').textContent = 'Simpan Perubahan';
     document.getElementById('admCancelEdit').hidden = false;
@@ -2885,6 +3034,7 @@
     const synopsis = document.getElementById('admSynopsis').value.trim();
     const artist = document.getElementById('admArtist').value.trim();
     const isRec = document.getElementById('admRecommended').checked;
+    const isFeat = document.getElementById('admFeatured').checked;
     const isPop = document.getElementById('admPopular').checked;
 
     if(!title || !mainGenre || !author || !chapters){ return; }
@@ -2911,6 +3061,7 @@
         synopsis: synopsis || null,
         ...((artist || (editingItem && (titles[editingItem.cat].find(x=>x.supabaseId === editingItem.id) || {}).artist)) ? { artist: artist || null } : {}),
         is_recommended: isRec,
+        ...((isFeat || (editingItem && (titles[editingItem.cat].find(x=>x.supabaseId === editingItem.id) || {}).isFeatured)) ? { is_featured: isFeat } : {}),
         is_popular: isPop
       };
 
@@ -2969,13 +3120,16 @@
       }
       const flagBtn = e.target.closest('.a-flag');
       if(flagBtn){
-        const isRec = flagBtn.dataset.flag === 'rec';
-        const field = isRec ? 'is_recommended' : 'is_popular';
-        const nowOn = !(isRec ? item.isRecommended : item.isPopular);
+        const kind = flagBtn.dataset.flag;
+        const FLAG_FIELDS = { rec:'is_recommended', pop:'is_popular', feat:'is_featured' };
+        const FLAG_NAMES = { rec:'Rekomendasi', pop:'Populer', feat:'Banner beranda' };
+        const FLAG_PROPS = { rec:'isRecommended', pop:'isPopular', feat:'isFeatured' };
+        const field = FLAG_FIELDS[kind];
+        const nowOn = !item[FLAG_PROPS[kind]];
         const updated = await updateTitleRemote(id, { [field]: nowOn });
         const idx = titles[cat].findIndex(x=>x.supabaseId === id);
         titles[cat][idx] = updated;
-        toast.textContent = `"${item.t}" ${nowOn ? 'ditambahkan ke' : 'dikeluarkan dari'} ${isRec ? 'Rekomendasi' : 'Populer'}.`;
+        toast.textContent = `"${item.t}" ${nowOn ? 'ditambahkan ke' : 'dikeluarkan dari'} ${FLAG_NAMES[kind]}.`;
         toast.hidden = false;
       }
       renderAdminList();
@@ -3378,6 +3532,7 @@
     titlesLoaded = true;
     await ensureLibrary();
     selectGenre('Manhwa');
+    renderFeatured();
     renderContinue();
   })();
 })();
