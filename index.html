@@ -351,10 +351,48 @@
   }
 
   .profile-stats{
-    display:flex; justify-content:space-around; margin:24px 20px;
-    padding:16px 0; border-top:1px solid var(--border); border-bottom:1px solid var(--border);
+    display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:22px 20px 18px; padding:0; border:none;
   }
-  .profile-stats div{ text-align:center; }
+  .stat-card{
+    background: var(--bg-panel); border:1px solid var(--border); border-radius:16px; padding:14px 10px;
+    text-align:center; color:inherit; font-family:inherit; cursor:pointer;
+  }
+  .stat-card:active{ opacity:0.7; }
+  .profile-badge{
+    display:inline-block; margin-left:8px; padding:2px 9px; border-radius:999px; vertical-align:middle;
+    background: var(--accent); color:#fff; font-size:0.66rem; font-weight:800; letter-spacing:0.04em;
+  }
+  .app-sheet-backdrop{ position:fixed; inset:0; z-index:80; background:rgba(0,0,0,0.55); display:flex; align-items:flex-end; }
+  .app-sheet-backdrop[hidden]{ display:none; }
+  .app-sheet{
+    width:100%; max-height:82vh; overflow:auto; background: var(--bg-panel); color: var(--text);
+    border-radius:22px 22px 0 0; border-top:1px solid var(--border);
+    padding:18px 18px calc(26px + env(safe-area-inset-bottom, 0px));
+  }
+  .app-sheet h4{ margin:0 0 6px; font-size:1.1rem; font-weight:800; }
+  .as-label{ font-size:0.76rem; color: var(--text-muted); font-weight:700; margin:18px 0 8px; }
+  .as-seg{ display:flex; gap:8px; }
+  .as-seg button{
+    flex:1; padding:11px 0; border-radius:12px; border:1px solid var(--border); background: var(--bg);
+    color: var(--text-muted); font-weight:700; font-size:0.86rem;
+  }
+  .as-seg button.on{ background: var(--accent); color:#fff; border-color:transparent; }
+  .as-input{
+    width:100%; padding:12px 14px; border-radius:12px; border:1px solid var(--border);
+    background: var(--bg); color: var(--text); font-size:0.95rem; font-family:inherit;
+  }
+  .as-btn{
+    width:100%; margin-top:14px; padding:13px; border-radius:999px; border:none; background: var(--accent);
+    color:#fff; font-weight:800; font-size:0.92rem;
+  }
+  .as-btn.ghost{ background:transparent; color: var(--text-muted); border:1px solid var(--border); margin-top:8px; }
+  .as-btn.danger{ background:transparent; color: var(--ember); border:1px solid var(--ember-soft); }
+  .as-msg{ font-size:0.8rem; color: var(--text-muted); margin-top:10px; min-height:1em; line-height:1.5; }
+  .as-faq details{ border-top:1px solid var(--border); padding:13px 2px; }
+  .as-faq summary{ font-weight:700; font-size:0.9rem; cursor:pointer; }
+  .as-faq p{ margin:8px 0 0; color: var(--text-muted); font-size:0.85rem; line-height:1.6; }
+  .as-about{ color: var(--text-muted); font-size:0.88rem; line-height:1.65; margin:10px 0 0; }
+  /* Admin panel */
   .profile-stats .num{ font-weight:800; font-size:1.1rem; }
   .profile-stats .plabel{ font-size:0.72rem; color: var(--text-faint); margin-top:2px; }
 
@@ -1152,6 +1190,10 @@
   <div class="reader-sheet-backdrop" id="readerSheet" hidden>
     <div class="reader-sheet" id="readerSheetBody"></div>
   </div>
+</div>
+
+<div class="app-sheet-backdrop" id="appSheet" hidden>
+  <div class="app-sheet" id="appSheetBody"></div>
 </div>
 
 <nav class="bottom">
@@ -2063,7 +2105,13 @@
 
   function renderProfile(){
     const bmCount = Object.keys(getBookmarks()).length;
+    const readCount = loadHistory().length;
     const el = document.getElementById('profileContent');
+    const stats = `
+      <div class="profile-stats">
+        <button type="button" class="stat-card" data-action="goto-history"><div class="num">${readCount}</div><div class="plabel">Dibaca</div></button>
+        <button type="button" class="stat-card" data-action="goto-koleksi"><div class="num">${bmCount}</div><div class="plabel">Koleksi</div></button>
+      </div>`;
 
     if(isLinked()){
       const meta = currentUser.user_metadata || {};
@@ -2077,20 +2125,16 @@
           <div class="profile-avatar-lg linked" ${avatarUrl ? `style="background-image:url('${avatarUrl}');background-size:cover;background-position:center;"` : ''}>
             ${avatarUrl ? '' : svgIcon('user')}
           </div>
-          <div class="profile-name">${name}</div>
+          <div class="profile-name">${name}${isAdmin() ? '<span class="profile-badge">ADMIN</span>' : ''}</div>
           <div class="profile-sub">${currentUser.email || ''}${joined ? ' · Bergabung ' + joined : ''}</div>
         </div>
-        <div class="profile-stats">
-          <div><div class="num">${loadHistory().length}</div><div class="plabel">Dibaca</div></div>
-          <div><div class="num">${bmCount}</div><div class="plabel">Koleksi</div></div>
-        </div>
+        ${stats}
         <div class="profile-menu">
           ${isAdmin() ? menuItem('admin','Panel Admin',{action:'admin'}) : ''}
-          ${menuItem('edit','Edit Profil')}
-          ${menuItem('bell','Notifikasi')}
-          ${menuItem('settings','Pengaturan')}
-          ${menuItem('help','Bantuan & Dukungan')}
-          ${menuItem('info','Tentang Aplikasi')}
+          ${menuItem('edit','Edit Profil',{action:'edit'})}
+          ${menuItem('settings','Pengaturan',{action:'settings'})}
+          ${menuItem('help','Bantuan',{action:'help'})}
+          ${menuItem('info','Tentang Henka',{action:'about'})}
           ${menuItem('logout','Keluar',{action:'logout', danger:true})}
         </div>`;
     } else {
@@ -2098,32 +2142,144 @@
         <div class="profile-header">
           <div class="profile-avatar-lg guest">${svgIcon('user')}</div>
           <div class="profile-name">Pengguna Tamu</div>
-          <div class="profile-sub">Riwayat & koleksi hanya tersimpan di perangkat ini</div>
+          <div class="profile-sub">Riwayat baca hanya tersimpan di perangkat ini</div>
         </div>
+        ${stats}
         <div class="link-banner">
           <div class="l-icon">${svgIcon('link')}</div>
           <div class="link-banner-text">
-            <strong>Akun belum terhubung</strong>
-            <p>Masuk dengan akun Google supaya riwayat baca dan koleksi kamu aman tersimpan dan bisa dibuka lagi di perangkat lain.</p>
+            <strong>Masuk dengan Google</strong>
+            <p>Riwayat baca, koleksi, dan pengaturan tersimpan di akun Anda dan ikut terbuka di perangkat lain. Koleksi hanya bisa dipakai setelah masuk.</p>
             <button class="link-btn" data-action="link">Masuk dengan Google</button>
           </div>
         </div>
         <div class="profile-menu">
-          ${menuItem('settings','Pengaturan')}
-          ${menuItem('help','Bantuan & Dukungan')}
-          ${menuItem('info','Tentang Aplikasi')}
-          ${menuItem('bell','Sinkronisasi Cloud',{locked:true})}
-          ${menuItem('bell','Lencana & Pencapaian',{locked:true})}
+          ${menuItem('settings','Pengaturan',{action:'settings'})}
+          ${menuItem('help','Bantuan',{action:'help'})}
+          ${menuItem('info','Tentang Henka',{action:'about'})}
         </div>`;
     }
   }
 
+  // ---- lembar (bottom sheet) untuk Edit Profil, Pengaturan, Bantuan, Tentang ----
+  function openAppSheet(html){
+    document.getElementById('appSheetBody').innerHTML = html;
+    document.getElementById('appSheet').hidden = false;
+  }
+  function closeAppSheet(){ document.getElementById('appSheet').hidden = true; }
+
+  function sheetEditProfile(){
+    const meta = (currentUser && currentUser.user_metadata) || {};
+    const name = meta.full_name || meta.name || '';
+    openAppSheet(`
+      <h4>Edit Profil</h4>
+      <div class="as-label">Nama tampilan</div>
+      <input class="as-input" id="asName" type="text" maxlength="40" value="${name.replace(/"/g,'&quot;')}" placeholder="Nama Anda">
+      <div class="as-msg" id="asMsg">Foto profil mengikuti akun Google Anda.</div>
+      <button type="button" class="as-btn" id="asSaveName">Simpan</button>
+      <button type="button" class="as-btn ghost" data-as="close">Batal</button>`);
+  }
+
+  function sheetSettings(){
+    const seg = (key, current, opts)=>`<div class="as-seg" data-key="${key}">` +
+      opts.map(([v,l])=>`<button type="button" data-v="${v}" class="${current === v ? 'on' : ''}">${l}</button>`).join('') + '</div>';
+    const theme = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+    openAppSheet(`
+      <h4>Pengaturan</h4>
+      <div class="as-label">Tema</div>
+      ${seg('theme', theme, [['dark','Gelap'],['light','Terang']])}
+      <div class="as-label">Kecepatan auto-scroll saat membaca</div>
+      ${seg('speed', readerPref.speed, [['slow','Lambat'],['mid','Sedang'],['fast','Cepat']])}
+      <div class="as-label">Latar belakang halaman chapter</div>
+      ${seg('bg', readerPref.bg, [['black','Hitam'],['gray','Abu-abu'],['white','Putih']])}
+      <div class="as-label">Data</div>
+      <button type="button" class="as-btn danger" id="asClearHistory" style="margin-top:0">Hapus semua riwayat baca</button>
+      <div class="as-msg" id="asMsg"></div>
+      <button type="button" class="as-btn ghost" data-as="close">Tutup</button>`);
+  }
+
+  function sheetHelp(){
+    openAppSheet(`
+      <h4>Bantuan</h4>
+      <div class="as-faq">
+        <details><summary>Bagaimana menyimpan judul ke Koleksi?</summary><p>Buka halaman judul lalu ketuk Bookmarks, atau ketuk ikon hati saat membaca. Koleksi hanya bisa dipakai setelah masuk dengan Google.</p></details>
+        <details><summary>Di mana riwayat baca saya tersimpan?</summary><p>Kalau Anda sudah masuk, tersimpan di akun Google dan ikut terbuka di perangkat lain. Kalau belum masuk, hanya tersimpan di perangkat ini.</p></details>
+        <details><summary>Gambar chapter tidak muncul?</summary><p>Periksa koneksi internet, lalu ketuk halaman yang gagal untuk memuat ulang. Gambar yang gagal juga dicoba ulang otomatis beberapa kali.</p></details>
+        <details><summary>Bagaimana menghapus riwayat atau koleksi?</summary><p>Tekan lama sebuah judul di tab Riwayat atau Koleksi, pilih satu atau lebih, lalu ketuk Hapus. Semua riwayat juga bisa dihapus lewat Pengaturan.</p></details>
+        <details><summary>Cara memakai auto-scroll?</summary><p>Saat membaca, ketuk ikon putar di bar bawah. Kecepatannya bisa diatur lewat ikon roda gigi atau lewat Pengaturan.</p></details>
+      </div>
+      <button type="button" class="as-btn ghost" data-as="close">Tutup</button>`);
+  }
+
+  function sheetAbout(){
+    openAppSheet(`
+      <h4>Tentang Henka</h4>
+      <p class="as-about">Henka adalah aplikasi web untuk membaca manhwa, manhua, dan manga. Koleksi, riwayat baca, dan pengaturan tersimpan di akun Google Anda, jadi bisa dilanjutkan dari perangkat mana pun.</p>
+      <button type="button" class="as-btn ghost" data-as="close">Tutup</button>`);
+  }
+
+  async function saveProfileName(){
+    const input = document.getElementById('asName');
+    const msg = document.getElementById('asMsg');
+    const name = (input.value || '').trim();
+    if(!name){ msg.textContent = 'Nama tidak boleh kosong.'; return; }
+    msg.textContent = 'Menyimpan…';
+    try{
+      const { data, error } = await sb.auth.updateUser({ data: { full_name: name } });
+      if(error) throw error;
+      if(data && data.user) currentUser = data.user;
+      else currentUser = Object.assign({}, currentUser, { user_metadata: Object.assign({}, currentUser.user_metadata, { full_name: name }) });
+      renderProfile();
+      closeAppSheet();
+    }catch(err){
+      msg.textContent = 'Gagal menyimpan: ' + (err.message || err);
+    }
+  }
+
+  function clearAllHistory(){
+    if(!confirm('Hapus semua riwayat baca? Ini tidak bisa dibatalkan.')) return;
+    lib.h = {};
+    libSaveCache();
+    if(currentUser) libRun(sb.from('reading_history').delete().eq('user_id', currentUser.id), 'hapus semua riwayat');
+    renderContinue();
+    renderProfile();
+    const msg = document.getElementById('asMsg');
+    if(msg) msg.textContent = 'Riwayat baca dihapus.';
+  }
+
+  document.getElementById('appSheet').addEventListener('click', e=>{
+    if(e.target.id === 'appSheet' || e.target.closest('[data-as="close"]')){ closeAppSheet(); return; }
+    const seg = e.target.closest('.as-seg button');
+    if(seg){
+      const key = seg.parentElement.dataset.key;
+      const v = seg.dataset.v;
+      if(key === 'theme'){
+        applyTheme(v);
+        if(currentUser) libRun(sb.from('user_settings').upsert({ user_id: currentUser.id, theme: v }, { onConflict: 'user_id' }), 'simpan tema');
+      } else {
+        readerPref[key] = v;
+        applyReaderPref();
+      }
+      seg.parentElement.querySelectorAll('button').forEach(b=>b.classList.toggle('on', b === seg));
+      return;
+    }
+    if(e.target.id === 'asSaveName'){ saveProfileName(); return; }
+    if(e.target.id === 'asClearHistory'){ clearAllHistory(); }
+  });
+
   document.getElementById('profileView').addEventListener('click', e=>{
     const btn = e.target.closest('[data-action]');
     if(!btn) return;
-    if(btn.dataset.action === 'link'){ signInWithGoogle(); }
-    if(btn.dataset.action === 'logout'){ signOutUser(); }
-    if(btn.dataset.action === 'admin'){ showAdmin(); }
+    const a = btn.dataset.action;
+    if(a === 'link'){ signInWithGoogle(); }
+    else if(a === 'logout'){ signOutUser(); }
+    else if(a === 'admin'){ showAdmin(); }
+    else if(a === 'edit'){ sheetEditProfile(); }
+    else if(a === 'settings'){ sheetSettings(); }
+    else if(a === 'help'){ sheetHelp(); }
+    else if(a === 'about'){ sheetAbout(); }
+    else if(a === 'goto-history'){ showRiwayat(); }
+    else if(a === 'goto-koleksi'){ showKoleksi(); }
   });
 
   function showProfile(){
