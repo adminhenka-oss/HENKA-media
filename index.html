@@ -1236,32 +1236,52 @@
     return new File([blob], file.name.replace(/\.\w+$/, '') + '.jpg', { type:'image/jpeg' });
   }
 
-  async function uploadImage(file, folder, nameOverride){
-    if(!/^image\//.test(file.type || '')){
-      throw new Error('"' + file.name + '" bukan file gambar (JPG/PNG/WEBP).');
+  // Unggah gambar: langsung dari browser ke R2 lewat izin sementara (/api/presign), supaya
+  // data gambar tidak lewat Vercel. Kalau cara itu gagal (mis. CORS R2 belum dipasang),
+  // otomatis memakai jalur lama lewat /api/upload.
+  let directUploadBroken = false;
+
+  function notifyDirectUploadFallback(reason){
+    const toast = document.getElementById('adminToast');
+    if(!toast) return;
+    toast.textContent = 'Unggah langsung ke R2 belum aktif (' + reason + '). Sementara memakai jalur lama yang memakai kuota Vercel. Cek pengaturan CORS bucket R2.';
+    toast.hidden = false;
+  }
+
+  async function uploadDirect(file, folder, nameOverride, session){
+    if(file.size > 15 * 1024 * 1024){
+      const big = new Error('Gambar "' + file.name + '" terlalu besar (maksimal 15 MB per gambar).');
+      big.fatal = true;
+      throw big;
     }
-    if(folder === 'covers'){
-      try{ file = await shrinkImage(file, 900, 0.88); }catch(e){}
+    const ct = (file.type || '').toLowerCase();
+    const res = await fetch('/api/presign', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+      body: JSON.stringify({ filename: nameOverride || file.name, contentType: ct, folder })
+    });
+    if(!res.ok){
+      const e = await res.json().catch(()=>({}));
+      const err = new Error(e.error || 'Gagal membuat izin unggah (status ' + res.status + ')');
+      if([400, 401, 403].includes(res.status)) err.fatal = true;
+      throw err;
     }
+    const { uploadUrl, publicUrl } = await res.json();
+    const put = await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': ct }, body: file });
+    if(!put.ok) throw new Error('R2 menolak unggahan (status ' + put.status + ')');
+    return publicUrl;
+  }
+
+  async function uploadViaServer(file, folder, nameOverride, session){
     const dataUrl = await readFileAsDataURL(file);
     const dataBase64 = dataUrl.split(',')[1];
     if(dataBase64.length > 4300000){
-      throw new Error('Gambar "' + file.name + '" terlalu besar (maksimal sekitar 3 MB per gambar). Kecilkan dulu ukurannya.');
+      throw new Error('Gambar "' + file.name + '" terlalu besar untuk jalur lama (maksimal sekitar 3 MB per gambar). Kecilkan dulu ukurannya.');
     }
-    const { data: { session } } = await sb.auth.getSession();
-    if(!session) throw new Error('Kamu harus masuk dengan Google dulu untuk mengunggah gambar.');
     const res = await fetch('/api/upload', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`
-      },
-      body: JSON.stringify({
-        filename: nameOverride || file.name,
-        contentType: file.type,
-        dataBase64,
-        folder
-      })
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+      body: JSON.stringify({ filename: nameOverride || file.name, contentType: file.type, dataBase64, folder })
     });
     if(!res.ok){
       const err = await res.json().catch(()=>({}));
@@ -1269,6 +1289,29 @@
     }
     const data = await res.json();
     return data.url;
+  }
+
+  async function uploadImage(file, folder, nameOverride){
+    if(!/^image\//.test(file.type || '')){
+      throw new Error('"' + file.name + '" bukan file gambar (JPG/PNG/WEBP).');
+    }
+    if(folder === 'covers'){
+      try{ file = await shrinkImage(file, 900, 0.88); }catch(e){}
+    }
+    const { data: { session } } = await sb.auth.getSession();
+    if(!session) throw new Error('Kamu harus masuk dengan Google dulu untuk mengunggah gambar.');
+
+    if(!directUploadBroken){
+      try{
+        return await uploadDirect(file, folder, nameOverride, session);
+      }catch(err){
+        if(err && err.fatal) throw err;
+        directUploadBroken = true;
+        console.warn('Unggah langsung ke R2 gagal, memakai jalur lama:', err);
+        notifyDirectUploadFallback(err && err.message ? err.message : 'tidak diketahui');
+      }
+    }
+    return uploadViaServer(file, folder, nameOverride, session);
   }
 
   const titles = { Manhwa: [], Manga: [], Manhua: [] };
