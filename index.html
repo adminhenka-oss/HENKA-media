@@ -1646,14 +1646,35 @@
     return list;
   }
 
+  // waktu relatif dalam bahasa Indonesia: "Baru saja", "5 menit yang lalu", "2 jam yang lalu", "1 minggu yang lalu", dst.
+  function relativeTime(value){
+    const t = value ? Date.parse(value) : NaN;
+    if(isNaN(t)) return '';
+    const sec = Math.floor((Date.now() - t) / 1000);
+    if(sec < 60) return 'Baru saja';
+    const min = Math.floor(sec / 60);
+    if(min < 60) return min + ' menit yang lalu';
+    const jam = Math.floor(min / 60);
+    if(jam < 24) return jam + ' jam yang lalu';
+    const hari = Math.floor(jam / 24);
+    if(hari < 7) return hari + ' hari yang lalu';
+    if(hari < 30) return Math.floor(hari / 7) + ' minggu yang lalu';
+    if(hari < 365) return Math.floor(hari / 30) + ' bulan yang lalu';
+    return Math.floor(hari / 365) + ' tahun yang lalu';
+  }
+
   async function buildChaptersRemote(item){
-    const { data, error } = await sb
-      .from('chapters')
-      .select('chapter_num, created_at')
+    const query = cols => sb.from('chapters').select(cols)
       .eq('title_id', item.supabaseId)
       .order('chapter_num', { ascending:false });
+    // updated_at (opsional, lewat chapter-waktu.sql) dipakai kalau ada; kalau belum ada, pakai created_at
+    let { data, error } = await query('chapter_num, created_at, updated_at');
+    if(error) ({ data, error } = await query('chapter_num, created_at'));
     if(error || !data || data.length === 0) return [];
-    return data.map(row=>({ num: row.chapter_num, date: 'Tersimpan' }));
+    return data.map(row=>({
+      num: row.chapter_num,
+      date: relativeTime(row.updated_at || row.created_at) || 'Tersimpan'
+    }));
   }
 
   let currentDetailTitle = null;
