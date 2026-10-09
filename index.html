@@ -1065,20 +1065,17 @@
 
         <div class="admin-group">
           <div class="admin-group-title">Angka</div>
-          <div class="admin-row-3">
+          <div class="admin-row-2">
             <div class="admin-field">
               <label>Rating</label>
               <input type="number" id="admRating" min="0" max="10" step="0.1" placeholder="8.0" required>
-            </div>
-            <div class="admin-field">
-              <label>Jml chapter</label>
-              <input type="number" id="admChapters" min="1" placeholder="12" required>
             </div>
             <div class="admin-field">
               <label>Views</label>
               <input type="text" id="admViews" placeholder="1.2k">
             </div>
           </div>
+          <div class="admin-hint">Jumlah chapter diisi otomatis dari nomor chapter terbaru yang kamu unggah.</div>
         </div>
 
         <div class="admin-group">
@@ -2626,6 +2623,28 @@
     else chapterOpenIds.delete(id);
   }, true);
 
+  // jumlah chapter di judul = nomor chapter terbaru (dibulatkan ke bawah), diperbarui otomatis
+  async function syncChapterCount(titleId){
+    try{
+      const { data, error } = await sb.from('chapters').select('chapter_num')
+        .eq('title_id', titleId).order('chapter_num', { ascending:false }).limit(1);
+      if(error) return;
+      const latest = (data && data.length) ? Math.floor(Number(data[0].chapter_num)) : 0;
+      let cat = null, idx = -1;
+      for(const c of Object.keys(titles)){
+        const i = titles[c].findIndex(x=>String(x.supabaseId) === String(titleId));
+        if(i >= 0){ cat = c; idx = i; break; }
+      }
+      if(cat === null) return;
+      const current = parseInt(String(titles[cat][idx].ch).replace(/\D/g, '')) || 0;
+      if(current === latest) return;
+      const updated = await updateTitleRemote(titleId, { chapter_count: latest });
+      titles[cat][idx] = updated;
+      renderAdminList();
+      refreshHomeLists();
+    }catch(e){ console.warn('Sinkron jumlah chapter gagal:', e); }
+  }
+
   // ===== Antrian upload chapter =====
   const uploadJobs = [];
   let uploadJobSeq = 0;
@@ -2740,6 +2759,7 @@
       job.blobs = [];
       renderUploadQueue();
       renderChapterImageList();
+      syncChapterCount(job.titleId);
     }catch(err){
       job.status = 'error';
       job.error = friendlyError(err);
@@ -2869,6 +2889,7 @@
       toast.hidden = false;
     }
     loadChapterGroup(btn.dataset.delTitleId);
+    if(!error) syncChapterCount(btn.dataset.delTitleId);
   });
 
   // ===== Pembaca chapter =====
@@ -3213,7 +3234,6 @@
     document.getElementById('admGenresExtra').value = it.genres.slice(1).join(', ');
     document.getElementById('admAuthor').value = it.author || '';
     document.getElementById('admRating').value = it.rating;
-    document.getElementById('admChapters').value = parseInt(String(it.ch).replace(/\D/g,'')) || 1;
     document.getElementById('admViews').value = it.views === '0' ? '' : it.views;
     document.getElementById('admSynopsis').value = it.synopsis || '';
     document.getElementById('admArtist').value = it.artist || '';
@@ -3249,7 +3269,6 @@
     const author = document.getElementById('admAuthor').value.trim();
     const rating = parseFloat(document.getElementById('admRating').value).toFixed(1);
     const status = document.getElementById('admStatus').value;
-    const chapters = document.getElementById('admChapters').value;
     const views = document.getElementById('admViews').value.trim() || '0';
     const synopsis = document.getElementById('admSynopsis').value.trim();
     const artist = document.getElementById('admArtist').value.trim();
@@ -3257,7 +3276,7 @@
     const isFeat = document.getElementById('admFeatured').checked;
     const isPop = document.getElementById('admPopular').checked;
 
-    if(!title || !mainGenre || !author || !chapters){ return; }
+    if(!title || !mainGenre || !author){ return; }
 
     const toast = document.getElementById('adminToast');
     toast.textContent = coverFile ? 'Mengunggah cover…' : 'Menyimpan…';
@@ -3271,7 +3290,6 @@
       const fields = {
         category,
         title,
-        chapter_count: Number(chapters),
         views,
         tag: mainGenre,
         rating: Number(rating),
@@ -3302,6 +3320,7 @@
       } else {
         const palette = coverPalette[titles[category].length % coverPalette.length];
         fields.cover_url = coverUrl;
+        fields.chapter_count = 0;      // diisi otomatis saat chapter diunggah
         fields.color_1 = palette[0];
         fields.color_2 = palette[1];
         const newItem = await insertTitle(category, fields);
