@@ -174,6 +174,23 @@
     display:grid; grid-template-columns: repeat(3, 1fr); gap:14px;
   }
   .grid .card{ width:auto; }
+  .grid.grid-2{ grid-template-columns: repeat(2, 1fr); gap:18px 14px; }
+  .upd-meta{ display:flex; align-items:center; gap:6px; margin-top:4px; font-size:0.78rem; color: var(--text-faint); }
+  .upd-meta i{ font-style:normal; opacity:0.6; }
+  .upd-chs{ display:flex; flex-direction:column; gap:8px; margin-top:10px; }
+  .upd-ch{
+    display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1px 8px;
+    padding:9px 12px; border-radius:14px; border:2px solid transparent; cursor:pointer;
+    background: linear-gradient(var(--bg-panel), var(--bg-panel)) padding-box,
+                linear-gradient(90deg, #5b6cff, #b25be8, #ff9aa9) border-box;
+    box-shadow:0 0 12px rgba(155,107,255,0.22);
+  }
+  .upd-ch:active{ opacity:0.75; }
+  .upd-ch-num{ font-weight:700; font-size:0.82rem; color: var(--text); }
+  .upd-ch-time{ font-size:0.7rem; color: var(--text-muted); }
+  .upd-ch.skel{ height:40px; border:none; box-shadow:none; background: var(--bg-panel); animation: updPulse 1.2s ease-in-out infinite; }
+  .upd-none{ font-size:0.75rem; color: var(--text-faint); padding:4px 2px; }
+  @keyframes updPulse{ 0%,100%{ opacity:0.5; } 50%{ opacity:1; } }
   .grid .cover{ width:100%; }
 
   .progress-track{
@@ -887,7 +904,7 @@
       <h2 class="section-title">Update</h2>
       <a class="section-link" href="#" data-seeall="update">Lihat semua</a>
     </div>
-    <div class="grid" id="updateGrid"></div>
+    <div class="grid grid-2" id="updateGrid"></div>
   </section>
 
   <section>
@@ -1419,14 +1436,66 @@
       </div>`;
   }
 
+  // ----- kartu Update di beranda: judul + dua chapter terbaru beserta waktunya -----
+  const latestCache = new Map();
+
+  function invalidateLatest(titleId){ latestCache.delete(String(titleId)); }
+
+  async function loadLatestChapters(titleId){
+    const hit = latestCache.get(titleId);
+    if(hit && Date.now() - hit.at < 60000) return hit.rows;
+    const query = cols => sb.from('chapters').select(cols)
+      .eq('title_id', titleId).order('chapter_num', { ascending:false }).limit(2);
+    let { data, error } = await query('chapter_num, created_at, updated_at');
+    if(error) ({ data, error } = await query('chapter_num, created_at'));
+    const rows = (!error && data)
+      ? data.map(r=>({ num: r.chapter_num, when: relativeTime(r.updated_at || r.created_at).replace(' yang lalu', ' lalu') }))
+      : [];
+    latestCache.set(titleId, { at: Date.now(), rows });
+    return rows;
+  }
+
+  function cardUpdateHTML(item){
+    const id = String(item.supabaseId || '');
+    const n = parseInt(String(item.ch).replace(/\D/g, '')) || 0;
+    return `
+      <div class="card upd-card" data-title="${item.t}">
+        <div class="cover" style="${coverStyle(item)}">
+          <div class="badge-row">${flagBadge(item)}</div>
+          ${item.cover ? '' : `<span class="cover-title">${item.t}</span>`}
+        </div>
+        <div class="card-name">${item.t}</div>
+        <div class="upd-meta"><span>${item.tag}</span>${n ? `<i>•</i><span>Ch. ${n}</span>` : ''}</div>
+        <div class="upd-chs" id="updch-${id}"><div class="upd-ch skel"></div><div class="upd-ch skel"></div></div>
+      </div>`;
+  }
+
+  async function fillUpdateChapters(items){
+    await Promise.all(items.filter(it=>it.supabaseId).map(async it=>{
+      const id = String(it.supabaseId);
+      let rows = [];
+      try{ rows = await loadLatestChapters(id); }catch(e){ rows = []; }
+      const box = document.getElementById('updch-' + id);
+      if(!box) return;
+      box.innerHTML = rows.length
+        ? rows.map(r=>`
+            <div class="upd-ch" data-title="${it.t}" data-chapter="${r.num}">
+              <span class="upd-ch-num">Chapter ${r.num}</span>
+              <span class="upd-ch-time">${r.when}</span>
+            </div>`).join('')
+        : '<div class="upd-none">Belum ada chapter</div>';
+    }));
+  }
+
   function selectGenre(genre){
     const rec = titles[genre].filter(it=>it.isRecommended);
-    const UPDATE_HOME_LIMIT = 9;   // 3 baris x 3 kolom di beranda; sisanya lewat "Lihat semua"
+    const UPDATE_HOME_LIMIT = 6;   // 3 baris x 2 kolom di beranda; sisanya lewat "Lihat semua"
     const upd = [...titles[genre]].reverse().slice(0, UPDATE_HOME_LIMIT);
     document.getElementById('recRow').innerHTML =
       rec.map((it,i)=>cardHTML(it, i===0)).join('') || `<div class="empty-note">Belum ada rekomendasi di ${genre}.</div>`;
     document.getElementById('updateGrid').innerHTML =
-      upd.map(it=>cardHTML(it,false)).join('') || `<div class="empty-note">Belum ada judul di ${genre}.</div>`;
+      upd.map(it=>cardUpdateHTML(it)).join('') || `<div class="empty-note">Belum ada judul di ${genre}.</div>`;
+    fillUpdateChapters(upd);
     renderPopuler(genre);
   }
 
@@ -1987,6 +2056,13 @@
   }
 
   document.addEventListener('click', async e=>{
+    const updCh = e.target.closest('.upd-ch[data-chapter]');
+    if(updCh){
+      const t = updCh.dataset.title;
+      await openDetail(t);
+      openReader(t, updCh.dataset.chapter);
+      return;
+    }
     const card = e.target.closest('.card, .history-card');
     if(!card || !card.dataset.title) return;
     const sel = selectors.find(x=>card.closest(x.wrapSel));
@@ -2759,6 +2835,8 @@
       job.blobs = [];
       renderUploadQueue();
       renderChapterImageList();
+      invalidateLatest(job.titleId);
+      refreshHomeLists();
       syncChapterCount(job.titleId);
     }catch(err){
       job.status = 'error';
@@ -2889,7 +2967,8 @@
       toast.hidden = false;
     }
     loadChapterGroup(btn.dataset.delTitleId);
-    if(!error) syncChapterCount(btn.dataset.delTitleId);
+    invalidateLatest(btn.dataset.delTitleId);
+    if(!error){ refreshHomeLists(); syncChapterCount(btn.dataset.delTitleId); }
   });
 
   // ===== Pembaca chapter =====
