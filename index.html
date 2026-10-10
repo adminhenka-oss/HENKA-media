@@ -180,15 +180,15 @@
   .upd-meta i{ font-style:normal; opacity:0.6; }
   .upd-chs{ display:flex; flex-direction:column; gap:6px; margin-top:8px; }
   .upd-ch{
-    display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1px 8px;
-    padding:6px 10px; border-radius:12px; border:1.5px solid transparent; cursor:pointer;
+    display:flex; justify-content:space-between; align-items:center; flex-wrap:nowrap; gap:6px;
+    padding:6px 9px; border-radius:12px; border:1.5px solid transparent; cursor:pointer;
     background: linear-gradient(var(--bg-panel), var(--bg-panel)) padding-box,
                 linear-gradient(90deg, #5b6cff, #b25be8, #ff9aa9) border-box;
     box-shadow:0 0 8px rgba(155,107,255,0.2);
   }
   .upd-ch:active{ opacity:0.75; }
-  .upd-ch-num{ font-weight:700; font-size:0.76rem; color: var(--text); }
-  .upd-ch-time{ font-size:0.64rem; color: var(--text-muted); }
+  .upd-ch-num{ font-weight:700; font-size:0.74rem; color: var(--text); white-space:nowrap; flex-shrink:0; }
+  .upd-ch-time{ font-size:0.62rem; color: var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
   .upd-ch.skel{ height:30px; border:none; box-shadow:none; background: var(--bg-panel); animation: updPulse 1.2s ease-in-out infinite; }
   .upd-none{ font-size:0.75rem; color: var(--text-faint); padding:4px 2px; }
   @keyframes updPulse{ 0%,100%{ opacity:0.5; } 50%{ opacity:1; } }
