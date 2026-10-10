@@ -1437,6 +1437,46 @@
       </div>`;
   }
 
+  // ----- urutan Update: judul dengan chapter baru (atau judul baru) muncul paling atas -----
+  const activityMap = new Map();      // idJudul -> waktu chapter terbaru (ms)
+  let activityAt = 0;
+  let activityLoading = null;
+
+  function invalidateActivity(){ activityAt = 0; }
+
+  function titleActivity(it){
+    return Math.max(activityMap.get(String(it.supabaseId)) || 0, it.createdAt || 0);
+  }
+  function sortByActivity(list){
+    return [...list].sort((a, b)=>(titleActivity(b) - titleActivity(a)) || ((b.seq || 0) - (a.seq || 0)));
+  }
+
+  // true kalau urutannya berubah
+  function loadActivity(force){
+    if(!force && Date.now() - activityAt < 60000) return Promise.resolve(false);
+    if(activityLoading) return activityLoading;
+    activityLoading = (async()=>{
+      try{
+        const { data, error } = await sb.from('chapters').select('title_id, created_at')
+          .order('created_at', { ascending:false }).limit(200);
+        if(error || !data) return false;
+        const next = new Map();
+        data.forEach(r=>{
+          const id = String(r.title_id), t = Date.parse(r.created_at) || 0;
+          if(t > (next.get(id) || 0)) next.set(id, t);
+        });
+        let changed = next.size !== activityMap.size;
+        next.forEach((v, k)=>{ if(activityMap.get(k) !== v) changed = true; });
+        activityMap.clear();
+        next.forEach((v, k)=>activityMap.set(k, v));
+        activityAt = Date.now();
+        return changed;
+      }catch(e){ return false; }
+      finally{ activityLoading = null; }
+    })();
+    return activityLoading;
+  }
+
   // ----- kartu Update di beranda: judul + dua chapter terbaru beserta waktunya -----
   const latestCache = new Map();
 
@@ -1491,12 +1531,16 @@
   function selectGenre(genre){
     const rec = titles[genre].filter(it=>it.isRecommended);
     const UPDATE_HOME_LIMIT = 6;   // 3 baris x 2 kolom di beranda; sisanya lewat "Lihat semua"
-    const upd = [...titles[genre]].reverse().slice(0, UPDATE_HOME_LIMIT);
+    const upd = sortByActivity(titles[genre]).slice(0, UPDATE_HOME_LIMIT);
     document.getElementById('recRow').innerHTML =
       rec.map((it,i)=>cardHTML(it, i===0)).join('') || `<div class="empty-note">Belum ada rekomendasi di ${genre}.</div>`;
     document.getElementById('updateGrid').innerHTML =
       upd.map(it=>cardUpdateHTML(it)).join('') || `<div class="empty-note">Belum ada judul di ${genre}.</div>`;
     fillUpdateChapters(upd);
+    loadActivity().then(changed=>{
+      const cur = document.querySelector('#genreTabs .tab.active')?.dataset.genre;
+      if(changed && cur === genre) selectGenre(genre);
+    });
     renderPopuler(genre);
   }
 
@@ -2130,7 +2174,7 @@
     seeAllState = { kind, genre };
     let list = titles[genre].filter(it=>it.isRecommended);
     let label = 'Rekomendasi';
-    if(kind === 'update'){ list = [...titles[genre]].reverse(); label = 'Update'; }
+    if(kind === 'update'){ list = sortByActivity(titles[genre]); label = 'Update'; }
     if(kind === 'populer'){ list = titles[genre].filter(it=>it.isPopular); label = 'Populer'; }
     document.getElementById('seeAllTitle').textContent = `${label} · ${genre}`;
     document.getElementById('seeAllWrap').innerHTML = list.length
@@ -2837,6 +2881,7 @@
       renderUploadQueue();
       renderChapterImageList();
       invalidateLatest(job.titleId);
+      invalidateActivity();
       refreshHomeLists();
       syncChapterCount(job.titleId);
     }catch(err){
@@ -2969,6 +3014,7 @@
     }
     loadChapterGroup(btn.dataset.delTitleId);
     invalidateLatest(btn.dataset.delTitleId);
+    invalidateActivity();
     if(!error){ refreshHomeLists(); syncChapterCount(btn.dataset.delTitleId); }
   });
 
@@ -3850,6 +3896,7 @@
     await loadCustomTitles();
     titlesLoaded = true;
     await ensureLibrary();
+    await loadActivity(true);
     selectGenre('Manhwa');
     renderFeatured();
     renderContinue();
