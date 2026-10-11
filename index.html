@@ -3516,10 +3516,36 @@
 
   let selectedFilters = new Set();
 
+  // Saat belum mengetik atau memilih filter: tampilkan Update terbaru (manhwa, manga, manhua bercampur)
+  const SEARCH_UPDATE_PAGE = 30;
+  let searchUpdateLimit = SEARCH_UPDATE_PAGE;
+
+  function renderSearchUpdates(){
+    const wrap = document.getElementById('searchResultsWrap');
+    const all = sortByActivity(allTitles());
+    if(all.length === 0){
+      wrap.innerHTML = `<div class="search-empty">Belum ada judul.</div>`;
+      return;
+    }
+    const shown = all.slice(0, searchUpdateLimit);
+    const rest = all.length - shown.length;
+    wrap.innerHTML = `
+      <h2 class="section-title" style="margin:6px 0 14px">Update terbaru</h2>
+      <div class="grid">${shown.map(it=>cardHTML(it, false)).join('')}</div>
+      ${rest > 0 ? `<button type="button" class="admin-more" id="searchUpdateMore" style="margin-top:14px">Tampilkan ${Math.min(SEARCH_UPDATE_PAGE, rest)} lagi (sisa ${rest})</button>` : ''}`;
+  }
+
+  document.getElementById('searchResultsWrap').addEventListener('click', e=>{
+    if(e.target.closest('#searchUpdateMore')){
+      searchUpdateLimit += SEARCH_UPDATE_PAGE;
+      renderSearchUpdates();
+    }
+  });
+
   function runSearch(query){
     const q = query.trim().toLowerCase();
     const wrap = document.getElementById('searchResultsWrap');
-    if(!q && selectedFilters.size === 0){ wrap.innerHTML = ''; return; }
+    if(!q && selectedFilters.size === 0){ renderSearchUpdates(); return; }
     const results = allTitles().filter(it=>{
       const matchesQuery = !q ||
         it.t.toLowerCase().includes(q) ||
@@ -3586,7 +3612,12 @@
     const ov = document.getElementById('searchOverlayInput');
     ov.value = startVal;
     document.getElementById('filterPanel').hidden = true;
+    searchUpdateLimit = SEARCH_UPDATE_PAGE;
     runSearch(startVal);
+    loadActivity().then(changed=>{
+      const cur = document.getElementById('searchOverlayInput').value.trim();
+      if(changed && !cur && selectedFilters.size === 0 && !document.getElementById('searchView').hidden) renderSearchUpdates();
+    });
     hideAllTabs();
     document.getElementById('searchView').hidden = false;
     document.querySelector('nav.bottom').style.display = 'none';
