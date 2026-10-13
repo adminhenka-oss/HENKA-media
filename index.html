@@ -3530,8 +3530,7 @@
     const shown = all.slice(0, searchUpdateLimit);
     const rest = all.length - shown.length;
     wrap.innerHTML = `
-      <h2 class="section-title" style="margin:6px 0 14px">Update terbaru</h2>
-      <div class="grid">${shown.map(it=>cardHTML(it, false)).join('')}</div>
+      <div class="grid" style="margin-top:10px">${shown.map(it=>cardHTML(it, false)).join('')}</div>
       ${rest > 0 ? `<button type="button" class="admin-more" id="searchUpdateMore" style="margin-top:14px">Tampilkan ${Math.min(SEARCH_UPDATE_PAGE, rest)} lagi (sisa ${rest})</button>` : ''}`;
   }
 
@@ -3633,6 +3632,9 @@
   }
 
   function closeSearchOverlay(){
+    // teks pencarian dikosongkan saat kembali, supaya kolom di beranda bersih
+    document.getElementById('searchInput').value = '';
+    document.getElementById('searchOverlayInput').value = '';
     document.getElementById('searchView').hidden = true;
     document.querySelector('nav.bottom').style.display = '';
     document.body.classList.remove('no-nav-pad');
