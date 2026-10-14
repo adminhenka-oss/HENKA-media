@@ -85,6 +85,7 @@
   main{ padding: 6px 20px 0; }
 
   .search-row{ display:flex; gap:10px; margin: 14px 0 22px; }
+  .featured:not([hidden]) + .search-row{ margin-top:0; }
   .search-box{
     flex:1; display:flex; align-items:center; gap:10px;
     background: var(--bg-panel);
@@ -864,13 +865,6 @@
 </header>
 
 <main>
-  <div class="search-row">
-    <div class="search-box">
-      <span>⌕</span>
-      <input type="text" id="searchInput" placeholder="Cari judul, penulis, genre…" readonly>
-    </div>
-  </div>
-
   <section class="featured" id="featuredWrap" hidden>
     <div class="feat-ambient" id="featAmbient"></div>
     <div class="feat-viewport" id="featViewport">
@@ -878,6 +872,13 @@
     </div>
     <div class="feat-dots" id="featDots"></div>
   </section>
+
+  <div class="search-row">
+    <div class="search-box">
+      <span>⌕</span>
+      <input type="text" id="searchInput" placeholder="Cari judul, penulis, genre…" readonly>
+    </div>
+  </div>
 
   <section>
     <div class="section-head">
