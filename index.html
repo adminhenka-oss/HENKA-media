@@ -3113,9 +3113,9 @@
       if(document.getElementById('readerView').hidden) return;
       const y = window.scrollY, dy = y - lastY;
       if(autoOn){ lastY = y; return; }
+      // bar hanya disembunyikan saat menggulir ke bawah; munculnya hanya lewat ketukan di layar
       if(dy > 14 && y > 80){ setReaderUI(false); lastY = y; }
-      else if(dy < -14){ setReaderUI(true); lastY = y; }
-      else if(Math.abs(dy) > 60){ lastY = y; }
+      else if(Math.abs(dy) > 14){ lastY = y; }
     });
   }, { passive:true });
 
