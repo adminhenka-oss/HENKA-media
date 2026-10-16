@@ -175,6 +175,18 @@
     display:grid; grid-template-columns: repeat(3, 1fr); gap:14px;
   }
   .grid .card{ width:auto; }
+  .pager{ display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:8px; margin:22px 0 10px; }
+  .pager button{
+    min-width:40px; height:40px; padding:0 8px; border-radius:9px; font-family:inherit; font-size:0.98rem; font-weight:500;
+    display:inline-flex; align-items:center; justify-content:center;
+  }
+  .pg-num{ background: var(--bg-raised); border:1px solid transparent; color: var(--text); }
+  :root[data-theme="light"] .pg-num{ background: var(--bg-panel-2); }
+  .pg-num.on{ background:#7442f2; color:#fff; }
+  .pg-arrow{ background:transparent; border:1px solid #7442f2; color:#8f64ff; }
+  .pg-arrow svg{ width:20px; height:20px; stroke:currentColor; fill:none; stroke-width:2.6; stroke-linecap:round; stroke-linejoin:round; }
+  .pg-arrow[disabled]{ border-color: rgba(116,66,242,0.28); color: rgba(143,100,255,0.35); }
+  .pg-gap{ color: var(--text-faint); padding:0 2px; }
   .grid.grid-2{ grid-template-columns: repeat(2, 1fr); gap:16px 14px; }
   .grid.grid-2 .cover{ height:auto; aspect-ratio:3 / 4; }
   .upd-meta{ display:flex; align-items:center; gap:6px; margin-top:2px; font-size:0.74rem; color: var(--text-faint); }
@@ -3519,7 +3531,15 @@
 
   // Saat belum mengetik atau memilih filter: tampilkan Update terbaru (manhwa, manga, manhua bercampur)
   const SEARCH_UPDATE_PAGE = 30;
-  let searchUpdateLimit = SEARCH_UPDATE_PAGE;
+  let searchUpdatePage = 1;
+
+  // daftar nomor halaman: 1 … 4 5 6 … 10
+  function pagerNumbers(total, cur){
+    if(total <= 6) return Array.from({ length: total }, (_, k)=>k + 1);
+    if(cur <= 3) return [1, 2, 3, '…', total];
+    if(cur >= total - 2) return [1, '…', total - 2, total - 1, total];
+    return [1, '…', cur - 1, cur, cur + 1, '…', total];
+  }
 
   function renderSearchUpdates(){
     const wrap = document.getElementById('searchResultsWrap');
@@ -3528,18 +3548,33 @@
       wrap.innerHTML = `<div class="search-empty">Belum ada judul.</div>`;
       return;
     }
-    const shown = all.slice(0, searchUpdateLimit);
-    const rest = all.length - shown.length;
+    const totalPages = Math.max(1, Math.ceil(all.length / SEARCH_UPDATE_PAGE));
+    searchUpdatePage = Math.min(Math.max(1, searchUpdatePage), totalPages);
+    const start = (searchUpdatePage - 1) * SEARCH_UPDATE_PAGE;
+    const shown = all.slice(start, start + SEARCH_UPDATE_PAGE);
+    const chev = d => `<svg viewBox="0 0 24 24"><polyline points="${d}"/></svg>`;
+    const pager = totalPages > 1 ? `
+      <nav class="pager" id="searchPager" aria-label="Halaman">
+        <button type="button" class="pg-arrow" data-pg="prev" ${searchUpdatePage === 1 ? 'disabled' : ''} aria-label="Sebelumnya">${chev('15 18 9 12 15 6')}</button>
+        ${pagerNumbers(totalPages, searchUpdatePage).map(n=> n === '…'
+          ? '<span class="pg-gap">…</span>'
+          : `<button type="button" class="pg-num ${n === searchUpdatePage ? 'on' : ''}" data-pg="${n}">${n}</button>`).join('')}
+        <button type="button" class="pg-arrow" data-pg="next" ${searchUpdatePage === totalPages ? 'disabled' : ''} aria-label="Berikutnya">${chev('9 18 15 12 9 6')}</button>
+      </nav>` : '';
     wrap.innerHTML = `
       <div class="grid" style="margin-top:10px">${shown.map(it=>cardHTML(it, false)).join('')}</div>
-      ${rest > 0 ? `<button type="button" class="admin-more" id="searchUpdateMore" style="margin-top:14px">Tampilkan ${Math.min(SEARCH_UPDATE_PAGE, rest)} lagi (sisa ${rest})</button>` : ''}`;
+      ${pager}`;
   }
 
   document.getElementById('searchResultsWrap').addEventListener('click', e=>{
-    if(e.target.closest('#searchUpdateMore')){
-      searchUpdateLimit += SEARCH_UPDATE_PAGE;
-      renderSearchUpdates();
-    }
+    const b = e.target.closest('#searchPager button[data-pg]');
+    if(!b || b.disabled) return;
+    const v = b.dataset.pg;
+    if(v === 'prev') searchUpdatePage -= 1;
+    else if(v === 'next') searchUpdatePage += 1;
+    else searchUpdatePage = Number(v);
+    renderSearchUpdates();
+    window.scrollTo(0, 0);
   });
 
   function runSearch(query){
@@ -3612,7 +3647,7 @@
     const ov = document.getElementById('searchOverlayInput');
     ov.value = startVal;
     document.getElementById('filterPanel').hidden = true;
-    searchUpdateLimit = SEARCH_UPDATE_PAGE;
+    searchUpdatePage = 1;
     runSearch(startVal);
     loadActivity().then(changed=>{
       const cur = document.getElementById('searchOverlayInput').value.trim();
