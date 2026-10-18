@@ -301,6 +301,8 @@
   }
   .chapter-row-title{ font-weight:700; font-size:0.9rem; }
   .chapter-row-date{ font-size:0.76rem; color: var(--text-faint); }
+  .chapter-row.read .chapter-row-title{ color: var(--text-faint); font-weight:600; }
+  .chapter-row.read .chapter-row-date{ opacity:0.65; }
 
   /* Riwayat / history page */
   .riwayat-view{ background: var(--bg); min-height:100vh; }
@@ -813,6 +815,7 @@
     font-size:0.92rem; font-weight:600;
   }
   .rs-chapter.current{ color:#9b6bff; }
+  .rs-chapter.read:not(.current){ color:#85858f; }
   .rs-chapter small{ color:#7d7d89; font-weight:500; }
   .reader-view:not([hidden]) ~ .app-toast{ bottom:122px; z-index:70; }
   body:has(.reader-view:not([hidden])) > header{ display:none; }
@@ -1577,7 +1580,9 @@
     const chap = isNaN(n) ? num : n;
     const prev = lib.h[id];
     const max = Math.max(isNaN(n) ? 0 : n, prev && prev.max ? prev.max : 0);
-    lib.h[id] = { read: chap, max, at: Date.now() };
+    const chs = new Set(prev ? (prev.chs || [prev.read]) : []);
+    if(!isNaN(n)) chs.add(n);
+    lib.h[id] = { read: chap, max, at: Date.now(), chs: [...chs].map(Number).filter(x=>!isNaN(x)) };
     libSaveCache();
     libPushHistory(id);
   }
@@ -1807,8 +1812,11 @@
 
   function renderChapterList(){
     const ordered = chapterAscending ? [...currentChapters].reverse() : currentChapters;
+    const it = findItem(currentDetailTitle);
+    const entry = (it && it.supabaseId) ? lib.h[String(it.supabaseId)] : null;
+    const done = new Set(entry ? (entry.chs || [entry.read]).map(Number) : []);
     document.getElementById('chapterList').innerHTML = ordered.map(c=>`
-      <div class="chapter-row" data-num="${c.num}">
+      <div class="chapter-row ${done.has(Number(c.num)) ? 'read' : ''}" data-num="${c.num}">
         <span class="chapter-row-title">Chapter ${c.num}</span>
         <span class="chapter-row-date">${c.date}</span>
       </div>`).join('');
@@ -1863,14 +1871,29 @@
     else libRun(sb.from('bookmarks').delete().eq('user_id', currentUser.id).eq('title_id', id), 'hapus koleksi');
   }
 
+  // kolom chapters_read (opsional, lewat riwayat-chapter.sql) menyimpan daftar chapter yang sudah dibuka
+  let readColMissing = false;
+
   function libPushHistory(id){
     if(!currentUser || !lib.h[id]) return;
     const e = lib.h[id];
-    libRun(sb.from('reading_history').upsert({
+    const row = {
       user_id: currentUser.id, title_id: id,
       chapter_read: Number(e.read) || 0, max_chapter: Number(e.max) || 0,
       read_at: new Date(e.at).toISOString()
-    }, { onConflict: 'user_id,title_id' }), 'simpan riwayat');
+    };
+    if(!readColMissing) row.chapters_read = e.chs || [];
+    const send = r=>sb.from('reading_history').upsert(r, { onConflict: 'user_id,title_id' });
+    Promise.resolve(send(row)).then(res=>{
+      if(res && res.error){
+        if(!readColMissing && /chapters_read/i.test(res.error.message || '')){
+          readColMissing = true;
+          delete row.chapters_read;
+          return libRun(send(row), 'simpan riwayat');
+        }
+        console.warn('Sinkron akun gagal (simpan riwayat):', res.error.message);
+      }
+    }, err=>console.warn('Sinkron akun gagal (simpan riwayat):', err));
   }
 
   // data lama di perangkat ini (tamu + versi sebelum sinkron) yang diimpor sekali saat login
@@ -1924,18 +1947,29 @@
     if(!currentUser) return;
     const uid = currentUser.id;
     try{
-      const [bRes, hRes] = await Promise.all([
+      const cacheH = lib.h;     // cache perangkat ini (berisi daftar chapter yang sudah dibaca)
+      const hQuery = cols => sb.from('reading_history').select(cols).eq('user_id', uid);
+      const [bRes, hRes0] = await Promise.all([
         sb.from('bookmarks').select('title_id').eq('user_id', uid),
-        sb.from('reading_history').select('title_id,chapter_read,max_chapter,read_at').eq('user_id', uid)
+        hQuery('title_id,chapter_read,max_chapter,read_at,chapters_read')
       ]);
+      let hRes = hRes0;
+      if(hRes.error){
+        readColMissing = true;      // kolom chapters_read belum ada: pakai cache perangkat saja
+        hRes = await hQuery('title_id,chapter_read,max_chapter,read_at');
+      }
       if(bRes.error || hRes.error) throw (bRes.error || hRes.error);
 
       const remoteB = {};
       (bRes.data || []).forEach(r=>{ remoteB[String(r.title_id)] = true; });
       const remoteH = {};
       (hRes.data || []).forEach(r=>{
-        remoteH[String(r.title_id)] = {
-          read: Number(r.chapter_read), max: Number(r.max_chapter), at: new Date(r.read_at).getTime()
+        const id = String(r.title_id);
+        const fromServer = Array.isArray(r.chapters_read) ? r.chapters_read : [];
+        const fromCache = (cacheH[id] && (cacheH[id].chs || [cacheH[id].read])) || [];
+        const chs = [...new Set([...fromServer, ...fromCache, Number(r.chapter_read)].map(Number))].filter(x=>!isNaN(x));
+        remoteH[id] = {
+          read: Number(r.chapter_read), max: Number(r.max_chapter), at: new Date(r.read_at).getTime(), chs
         };
       });
 
@@ -1945,7 +1979,10 @@
       Object.keys(imp.h).forEach(id=>{
         const loc = imp.h[id], rem = remoteH[id];
         if(!rem || loc.at > rem.at){
-          remoteH[id] = { read: loc.read, max: Math.max(Number(loc.max) || 0, rem ? rem.max : 0), at: loc.at };
+          remoteH[id] = {
+            read: loc.read, max: Math.max(Number(loc.max) || 0, rem ? rem.max : 0), at: loc.at,
+            chs: [...new Set([...(loc.chs || [loc.read]), ...(rem ? rem.chs || [] : [])].map(Number))].filter(x=>!isNaN(x))
+          };
           newH.push(id);
         } else if((Number(loc.max) || 0) > rem.max){
           rem.max = Number(loc.max);
@@ -3197,8 +3234,11 @@
   });
 
   document.getElementById('readerList').addEventListener('click', ()=>{
+    const itm = findItem(currentDetailTitle);
+    const ent = (itm && itm.supabaseId) ? lib.h[String(itm.supabaseId)] : null;
+    const readSet = new Set(ent ? (ent.chs || [ent.read]).map(Number) : []);
     const rows = [...currentChapters].sort((a,b)=>Number(b.num) - Number(a.num)).map(c=>`
-      <div class="rs-chapter ${Number(c.num) === Number(readerNum) ? 'current' : ''}" data-num="${c.num}">
+      <div class="rs-chapter ${Number(c.num) === Number(readerNum) ? 'current' : ''} ${readSet.has(Number(c.num)) ? 'read' : ''}" data-num="${c.num}">
         <span>Chapter ${c.num}</span><small>${Number(c.num) === Number(readerNum) ? 'Sedang dibaca' : ''}</small>
       </div>`).join('');
     openReaderSheet(`<h4>Daftar chapter</h4>${rows || '<div class="reader-empty" style="padding:30px 0">Belum ada chapter.</div>'}`);
