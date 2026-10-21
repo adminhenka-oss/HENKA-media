@@ -789,8 +789,46 @@
   .reader-view.ui-hidden .reader-bar-top{ transform:translateY(-140%); opacity:0; pointer-events:none; }
   .reader-view.ui-hidden .reader-bar-bottom{ transform:translateY(160%); opacity:0; pointer-events:none; }
   .reader-view.ui-hidden .reader-side{ transform:translateX(150%); opacity:0; pointer-events:none; }
-  .reader-end{ padding:34px 20px 150px; text-align:center; color:#a4a4b0; font-size:0.9rem; display:flex; flex-direction:column; gap:12px; background:#0d0d10; }
+  .reader-end{ padding:34px 20px 28px; text-align:center; color:#a4a4b0; font-size:0.9rem; display:flex; flex-direction:column; gap:12px; background:#0d0d10; }
   .reader-end[hidden]{ display:none; }
+  /* Komentar */
+  .cm-section{ background:#121214; color:#f4f4f5; padding:18px 16px 150px; border-top:1px solid rgba(255,255,255,0.06); }
+  .cm-section[hidden]{ display:none; }
+  .cm-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .cm-count{ font-weight:800; font-size:1.02rem; }
+  .cm-sort{ background:none; border:none; color:#cfcfd8; display:flex; align-items:center; gap:6px; font-size:0.78rem; font-weight:700; padding:6px 0; }
+  .cm-sort svg{ width:20px; height:20px; stroke:currentColor; fill:none; stroke-width:2.2; stroke-linecap:round; }
+  .cm-composer{ display:flex; gap:10px; align-items:flex-end; margin-bottom:18px; }
+  .cm-av{ width:44px; height:44px; border-radius:50%; flex-shrink:0; object-fit:cover; display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff; font-size:1rem; }
+  .cm-av.sm{ width:32px; height:32px; font-size:0.8rem; }
+  .cm-input-wrap{ flex:1; min-width:0; background:#26262b; border-radius:22px; display:flex; align-items:flex-end; padding:4px 6px 4px 14px; }
+  .cm-input{ flex:1; min-width:0; background:none; border:none; outline:none; color:#f4f4f5; font:inherit; font-size:0.95rem; resize:none; padding:8px 0; max-height:120px; line-height:1.4; }
+  .cm-send{ width:34px; height:34px; border-radius:50%; border:none; background:#7442f2; color:#fff; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-bottom:2px; }
+  .cm-send[disabled]{ background:#3a3a42; color:#7d7d89; }
+  .cm-send svg{ width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; }
+  .cm-login{ width:100%; padding:13px; border-radius:22px; border:1px dashed rgba(255,255,255,0.18); background:transparent; color:#b7a2ff; font-weight:700; font-size:0.9rem; margin-bottom:18px; }
+  .cm-item{ display:flex; gap:12px; margin-bottom:22px; }
+  .cm-body{ flex:1; min-width:0; }
+  .cm-name{ font-weight:700; font-size:0.88rem; color:#a8a8b3; display:flex; align-items:center; gap:6px; }
+  .cm-badge{ font-size:0.6rem; font-weight:800; padding:1px 6px; border-radius:999px; background:#7442f2; color:#fff; }
+  .cm-text{ margin-top:3px; font-size:1rem; line-height:1.45; white-space:pre-wrap; word-break:break-word; }
+  .cm-meta{ display:flex; align-items:center; justify-content:space-between; margin-top:8px; color:#7d7d89; font-size:0.84rem; }
+  .cm-meta-left{ display:flex; gap:16px; align-items:center; }
+  .cm-act{ background:none; border:none; padding:0; color:#9a9aa6; font:inherit; font-weight:700; }
+  .cm-like{ display:flex; align-items:center; gap:6px; background:none; border:none; color:#9a9aa6; font:inherit; padding:0; }
+  .cm-like svg{ width:22px; height:22px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .cm-like.on{ color:#ff4f74; }
+  .cm-like.on svg{ fill:#ff4f74; }
+  .cm-toggle{ display:flex; align-items:center; gap:10px; margin:12px 0 0; background:none; border:none; color:#a8a8b3; font:inherit; font-weight:700; font-size:0.86rem; padding:0; }
+  .cm-line{ width:26px; height:1px; background:#3a3a42; }
+  .cm-replies{ margin-top:14px; }
+  .cm-replies .cm-item{ margin-bottom:16px; }
+  .cm-reply-box{ margin-top:12px; }
+  .cm-reply-box .cm-composer{ margin-bottom:6px; }
+  .cm-empty, .cm-note{ text-align:center; color:#7d7d89; font-size:0.88rem; padding:26px 8px; line-height:1.6; }
+  .cm-more{ width:100%; padding:12px; border-radius:999px; border:1px solid rgba(255,255,255,0.12); background:transparent; color:#cfcfd8; font-weight:700; font-size:0.86rem; margin-top:4px; }
+  .cm-more[hidden]{ display:none; }
+  .cm-error{ color:#ff8a5c; font-size:0.8rem; margin:4px 2px 0; }
   .reader-end button{
     padding:14px; border-radius:999px; border:1px solid rgba(255,255,255,0.12);
     background:rgba(52,52,60,0.95); color:#f1f1f5; font-weight:700; font-size:0.92rem;
@@ -1205,6 +1243,19 @@
   <div class="reader-pages" id="readerPages"></div>
   <div class="reader-empty" id="readerEmpty" hidden>Belum ada gambar untuk chapter ini.<br>Tambahkan lewat Panel Admin → Chapter.</div>
   <div class="reader-end" id="readerEnd" hidden></div>
+
+  <section class="cm-section" id="cmSection" hidden>
+    <div class="cm-head">
+      <span class="cm-count" id="cmCount">Komentar</span>
+      <button type="button" class="cm-sort" id="cmSort" aria-label="Urutkan komentar">
+        <span id="cmSortLabel">Terbaru</span>
+        <svg viewBox="0 0 24 24"><line x1="4" y1="7" x2="20" y2="7"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="10" y1="17" x2="14" y2="17"/></svg>
+      </button>
+    </div>
+    <div id="cmComposer"></div>
+    <div id="cmList"></div>
+    <button type="button" class="cm-more" id="cmMore" hidden>Muat lebih banyak</button>
+  </section>
 
   <div class="reader-side" id="readerSide">
     <button class="rs-circle" id="readerUp" aria-label="Gulir ke atas"><svg viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg></button>
@@ -3272,6 +3323,389 @@
     openReader(currentDetailTitle, num);
   }
 
+  // ===== Komentar per chapter =====
+  const CM_PAGE = 15;
+  const CM_MAX = 500;
+  const CM_COLS = 'id, user_id, parent_id, author_name, author_avatar, is_admin, body, like_count, reply_count, created_at';
+  const CM_HEART = '<svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
+  const CM_SEND = '<svg viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>';
+  const cm = { titleId:null, num:null, sort:'new', items:[], total:0, hasMore:false, liked:new Set(),
+               replies:new Map(), open:new Set(), replyTo:null, draft:'', unavailable:false, observer:null, busy:false };
+
+  function cmEsc(v){
+    return String(v == null ? '' : v).replace(/[&<>"']/g, c=>({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+  }
+  function cmTime(ts){
+    const t = Date.parse(ts);
+    if(isNaN(t)) return '';
+    const sec = Math.floor((Date.now() - t) / 1000);
+    if(sec < 60) return 'Baru saja';
+    const min = Math.floor(sec / 60);
+    if(min < 60) return min + ' mnt';
+    const jam = Math.floor(min / 60);
+    if(jam < 24) return jam + ' jam';
+    const hari = Math.floor(jam / 24);
+    if(hari < 7) return hari + ' hari';
+    const d = new Date(t);
+    const mm = String(d.getMonth() + 1).padStart(2, '0'), dd = String(d.getDate()).padStart(2, '0');
+    return d.getFullYear() === new Date().getFullYear() ? mm + '-' + dd : d.getFullYear() + '-' + mm + '-' + dd;
+  }
+  function cmHue(name){
+    let h = 0;
+    for(const ch of String(name || '?')) h = (h * 31 + ch.charCodeAt(0)) % 360;
+    return h;
+  }
+  function cmAvatar(name, url, small){
+    const cls = 'cm-av' + (small ? ' sm' : '');
+    const initial = cmEsc((String(name || '?').trim()[0] || '?').toUpperCase());
+    const bg = 'background:hsl(' + cmHue(name) + ',45%,42%)';
+    if(url && /^https:\/\//.test(url)){
+      return '<img class="' + cls + '" src="' + cmEsc(url) + '" alt="" referrerpolicy="no-referrer" loading="lazy" data-initial="' + initial + '" data-bg="' + bg + '">';
+    }
+    return '<span class="' + cls + '" style="' + bg + '">' + initial + '</span>';
+  }
+  function cmMyName(){
+    const m = (currentUser && currentUser.user_metadata) || {};
+    return m.full_name || m.name || 'Aku';
+  }
+  function cmMyAvatar(small){
+    const m = (currentUser && currentUser.user_metadata) || {};
+    return cmAvatar(cmMyName(), m.avatar_url || m.picture, !!small);
+  }
+  function cmFriendlyError(err){
+    const m = (err && err.message) ? err.message : String(err);
+    if(/Terlalu cepat/i.test(m)) return 'Terlalu cepat. Tunggu beberapa detik sebelum berkomentar lagi.';
+    if(/row-level security|permission denied|Harus login/i.test(m)) return 'Masuk dengan Google dulu untuk berkomentar.';
+    if(/tidak ditemukan/i.test(m)) return 'Komentar yang dibalas sudah tidak ada.';
+    return m;
+  }
+  function cmIsMissing(err){
+    const m = (err && err.message) ? err.message : '';
+    return /does not exist|schema cache|PGRST205|42P01/i.test(m) || !!(err && (err.code === 'PGRST205' || err.code === '42P01'));
+  }
+  function cmCanDelete(c){
+    return !!currentUser && (c.user_id === currentUser.id || isAdmin());
+  }
+
+  function cmBuildComposer(){
+    const box = document.getElementById('cmComposer');
+    if(cm.unavailable){ box.innerHTML = ''; return; }
+    if(!currentUser){
+      box.innerHTML = '<button type="button" class="cm-login" id="cmLogin">Masuk dengan Google untuk berkomentar</button>';
+      return;
+    }
+    box.innerHTML =
+      '<div class="cm-composer">' + cmMyAvatar(false) +
+      '<div class="cm-input-wrap"><textarea class="cm-input" id="cmInput" rows="1" maxlength="' + CM_MAX + '" placeholder="Tambahkan komentar…"></textarea>' +
+      '<button type="button" class="cm-send" id="cmSend" aria-label="Kirim" disabled>' + CM_SEND + '</button></div></div>' +
+      '<div class="cm-error" id="cmError" hidden></div>';
+  }
+
+  function cmReplyBoxHTML(){
+    return '<div class="cm-reply-box"><div class="cm-composer">' + cmMyAvatar(true) +
+      '<div class="cm-input-wrap"><textarea class="cm-input" id="cmReplyInput" rows="1" maxlength="' + CM_MAX + '" placeholder="Membalas ' + cmEsc(cm.replyTo.name) + '…"></textarea>' +
+      '<button type="button" class="cm-send" id="cmReplySend" aria-label="Kirim balasan" disabled>' + CM_SEND + '</button></div></div>' +
+      '<div class="cm-error" id="cmReplyError" hidden></div>' +
+      '<button type="button" class="cm-act" data-cm="cancel" style="margin-left:2px">Batal</button></div>';
+  }
+
+  function cmItemHTML(c, isReply){
+    const liked = cm.liked.has(c.id);
+    const canDel = cmCanDelete(c);
+    const replyBox = (cm.replyTo && cm.replyTo.targetId === c.id) ? cmReplyBoxHTML() : '';
+    let repliesHTML = '';
+    if(!isReply && c.reply_count > 0){
+      const open = cm.open.has(c.id);
+      repliesHTML = '<button type="button" class="cm-toggle" data-cm="toggle" data-id="' + c.id + '"><span class="cm-line"></span>' +
+        (open ? 'Sembunyikan balasan' : 'Lihat ' + c.reply_count + ' balasan') + ' ' + (open ? '⌃' : '⌄') + '</button>';
+      if(open){
+        const list = cm.replies.get(c.id);
+        repliesHTML += '<div class="cm-replies">' + (list ? list.map(r=>cmItemHTML(r, true)).join('') : '<div class="cm-note" style="padding:8px">Memuat…</div>') + '</div>';
+      }
+    }
+    return '<div class="cm-item" data-cid="' + c.id + '">' + cmAvatar(c.author_name, c.author_avatar, isReply) +
+      '<div class="cm-body">' +
+        '<div class="cm-name"><span>' + cmEsc(c.author_name) + '</span>' + (c.is_admin ? '<span class="cm-badge">ADMIN</span>' : '') + '</div>' +
+        '<div class="cm-text">' + cmEsc(c.body) + '</div>' +
+        '<div class="cm-meta"><div class="cm-meta-left"><span>' + cmEsc(cmTime(c.created_at)) + '</span>' +
+          '<button type="button" class="cm-act" data-cm="reply" data-id="' + c.id + '" data-root="' + (c.parent_id || c.id) + '">Balas</button>' +
+          (canDel ? '<button type="button" class="cm-act" data-cm="delete" data-id="' + c.id + '">Hapus</button>' : '') +
+        '</div>' +
+        '<button type="button" class="cm-like ' + (liked ? 'on' : '') + '" data-cm="like" data-id="' + c.id + '" aria-label="Suka">' + CM_HEART + (c.like_count > 0 ? '<span>' + c.like_count + '</span>' : '') + '</button></div>' +
+        replyBox + repliesHTML +
+      '</div></div>';
+  }
+
+  function cmRenderList(){
+    const list = document.getElementById('cmList');
+    const more = document.getElementById('cmMore');
+    // simpan ketikan balasan supaya tidak hilang saat daftar digambar ulang
+    const rin = document.getElementById('cmReplyInput');
+    if(rin) cm.draft = rin.value;
+    document.getElementById('cmCount').textContent =
+      cm.unavailable ? 'Komentar' : (cm.total.toLocaleString('id-ID') + ' komentar');
+    document.getElementById('cmSortLabel').textContent = cm.sort === 'top' ? 'Terpopuler' : 'Terbaru';
+    if(cm.unavailable){
+      list.innerHTML = '<div class="cm-note">' + (isAdmin()
+        ? 'Komentar belum aktif. Jalankan komentar.sql di Supabase → SQL Editor.'
+        : 'Komentar belum tersedia.') + '</div>';
+      more.hidden = true;
+      return;
+    }
+    list.innerHTML = cm.items.length
+      ? cm.items.map(c=>cmItemHTML(c, false)).join('')
+      : '<div class="cm-empty">Belum ada komentar.<br>Jadilah yang pertama berkomentar!</div>';
+    more.hidden = !cm.hasMore;
+    const nin = document.getElementById('cmReplyInput');
+    if(nin){
+      nin.value = cm.draft || '';
+      nin.focus({ preventScroll:true });
+      const send = document.getElementById('cmReplySend');
+      if(send) send.disabled = !nin.value.trim();
+    }
+  }
+
+  async function cmFetchLiked(ids){
+    if(!currentUser || !ids.length) return;
+    const { data } = await sb.from('comment_likes').select('comment_id').in('comment_id', ids);
+    (data || []).forEach(r=>cm.liked.add(r.comment_id));
+  }
+
+  async function cmLoad(reset){
+    if(cm.busy) return;
+    cm.busy = true;
+    const key = cm.titleId + '|' + cm.num;
+    try{
+      const from = reset ? 0 : cm.items.length;
+      let q = sb.from('comments').select(CM_COLS)
+        .eq('title_id', cm.titleId).eq('chapter_num', cm.num).is('parent_id', null);
+      q = cm.sort === 'top'
+        ? q.order('like_count', { ascending:false }).order('created_at', { ascending:false })
+        : q.order('created_at', { ascending:false });
+      const { data, error } = await q.range(from, from + CM_PAGE - 1);
+      if(error) throw error;
+      if(key !== cm.titleId + '|' + cm.num) return;
+      if(reset){
+        cm.items = []; cm.replies = new Map(); cm.open = new Set(); cm.replyTo = null; cm.draft = '';
+        const cnt = await sb.from('comments').select('id', { count:'exact', head:true })
+          .eq('title_id', cm.titleId).eq('chapter_num', cm.num);
+        cm.total = (cnt && typeof cnt.count === 'number') ? cnt.count : (data || []).length;
+      }
+      const rows = data || [];
+      await cmFetchLiked(rows.map(r=>r.id));
+      cm.items = cm.items.concat(rows);
+      cm.hasMore = rows.length === CM_PAGE;
+      cm.unavailable = false;
+    }catch(err){
+      if(cmIsMissing(err)) cm.unavailable = true;
+      else console.warn('Gagal memuat komentar:', err);
+    }finally{
+      cm.busy = false;
+    }
+    cmBuildComposer();
+    cmRenderList();
+  }
+
+  function cmInit(item, num){
+    const sec = document.getElementById('cmSection');
+    if(cm.observer){ cm.observer.disconnect(); cm.observer = null; }
+    if(!item || !item.supabaseId){ sec.hidden = true; return; }
+    cm.titleId = String(item.supabaseId);
+    cm.num = Number(num);
+    cm.items = []; cm.total = 0; cm.hasMore = false; cm.replies = new Map(); cm.open = new Set();
+    cm.replyTo = null; cm.draft = ''; cm.liked = new Set(); cm.unavailable = false; cm.busy = false;
+    document.getElementById('cmCount').textContent = 'Komentar';
+    document.getElementById('cmList').innerHTML = '<div class="cm-note">Memuat komentar…</div>';
+    document.getElementById('cmMore').hidden = true;
+    cmBuildComposer();
+    sec.hidden = false;
+    if('IntersectionObserver' in window){
+      cm.observer = new IntersectionObserver(entries=>{
+        if(entries.some(e=>e.isIntersecting)){
+          cm.observer.disconnect(); cm.observer = null;
+          cmLoad(true);
+        }
+      }, { rootMargin:'700px 0px' });
+      cm.observer.observe(sec);
+    } else {
+      cmLoad(true);
+    }
+  }
+
+  function cmFindComment(id){
+    let c = cm.items.find(x=>x.id === id);
+    if(c) return c;
+    for(const list of cm.replies.values()){
+      c = list.find(x=>x.id === id);
+      if(c) return c;
+    }
+    return null;
+  }
+
+  async function cmPost(body, parentId, targetName){
+    if(!currentUser){ showLoginToast('Masuk dengan Google dulu untuk berkomentar.'); return null; }
+    let text = body.trim();
+    if(!text) return null;
+    if(targetName) text = '@' + targetName + ' ' + text;
+    if(text.length > CM_MAX) throw new Error('Komentar terlalu panjang (maksimal ' + CM_MAX + ' karakter).');
+    const { data, error } = await sb.from('comments')
+      .insert({ title_id: cm.titleId, chapter_num: cm.num, parent_id: parentId || null, body: text })
+      .select(CM_COLS).single();
+    if(error) throw error;
+    return data;
+  }
+
+  async function cmSendMain(){
+    const input = document.getElementById('cmInput');
+    const send = document.getElementById('cmSend');
+    const err = document.getElementById('cmError');
+    if(!input || !send || send.disabled) return;
+    send.disabled = true; err.hidden = true;
+    try{
+      const row = await cmPost(input.value, null, null);
+      if(!row) return;
+      cm.items.unshift(row);
+      cm.total += 1;
+      input.value = ''; input.style.height = 'auto';
+      cmRenderList();
+    }catch(e){
+      err.textContent = cmFriendlyError(e); err.hidden = false;
+      send.disabled = !input.value.trim();
+    }
+  }
+
+  async function cmSendReply(){
+    const input = document.getElementById('cmReplyInput');
+    const send = document.getElementById('cmReplySend');
+    const err = document.getElementById('cmReplyError');
+    if(!input || !send || send.disabled || !cm.replyTo) return;
+    send.disabled = true; err.hidden = true;
+    const t = cm.replyTo;
+    try{
+      const row = await cmPost(input.value, t.rootId, t.isReply ? t.name : null);
+      if(!row) return;
+      const root = cm.items.find(x=>x.id === t.rootId);
+      if(root) root.reply_count = (root.reply_count || 0) + 1;
+      if(!cm.replies.has(t.rootId)){
+        // balasan lama belum dimuat: ambil dulu supaya urutannya benar
+        const { data } = await sb.from('comments').select(CM_COLS)
+          .eq('parent_id', t.rootId).order('created_at', { ascending:true }).limit(100);
+        cm.replies.set(t.rootId, data || [row]);
+      } else {
+        cm.replies.set(t.rootId, cm.replies.get(t.rootId).concat([row]));
+      }
+      cm.open.add(t.rootId);
+      cm.total += 1;
+      cm.replyTo = null; cm.draft = '';
+      cmRenderList();
+    }catch(e){
+      err.textContent = cmFriendlyError(e); err.hidden = false;
+      send.disabled = !input.value.trim();
+    }
+  }
+
+  async function cmToggleReplies(rootId){
+    if(cm.open.has(rootId)){ cm.open.delete(rootId); cmRenderList(); return; }
+    cm.open.add(rootId);
+    cmRenderList();
+    if(cm.replies.has(rootId)) return;
+    const { data, error } = await sb.from('comments').select(CM_COLS)
+      .eq('parent_id', rootId).order('created_at', { ascending:true }).limit(100);
+    if(error){ cm.open.delete(rootId); cmRenderList(); return; }
+    await cmFetchLiked((data || []).map(r=>r.id));
+    cm.replies.set(rootId, data || []);
+    cmRenderList();
+  }
+
+  async function cmToggleLike(id){
+    if(!currentUser){ showLoginToast('Masuk dengan Google dulu untuk menyukai komentar.'); return; }
+    const c = cmFindComment(id);
+    if(!c) return;
+    const wasOn = cm.liked.has(id);
+    if(wasOn){ cm.liked.delete(id); c.like_count = Math.max(0, c.like_count - 1); }
+    else { cm.liked.add(id); c.like_count += 1; }
+    cmRenderList();
+    const res = wasOn
+      ? await sb.from('comment_likes').delete().eq('comment_id', id).eq('user_id', currentUser.id)
+      : await sb.from('comment_likes').insert({ comment_id: id });
+    if(res && res.error){
+      if(wasOn){ cm.liked.add(id); c.like_count += 1; }
+      else { cm.liked.delete(id); c.like_count = Math.max(0, c.like_count - 1); }
+      cmRenderList();
+    }
+  }
+
+  async function cmDelete(id){
+    const c = cmFindComment(id);
+    if(!c) return;
+    if(!confirm('Hapus komentar ini?')) return;
+    const { error } = await sb.from('comments').delete().eq('id', id);
+    if(error){ showLoginToast('Gagal menghapus komentar.'); return; }
+    if(c.parent_id){
+      cm.replies.set(c.parent_id, (cm.replies.get(c.parent_id) || []).filter(x=>x.id !== id));
+      const root = cm.items.find(x=>x.id === c.parent_id);
+      if(root) root.reply_count = Math.max(0, (root.reply_count || 0) - 1);
+      cm.total = Math.max(0, cm.total - 1);
+    } else {
+      cm.items = cm.items.filter(x=>x.id !== id);
+      cm.total = Math.max(0, cm.total - 1 - (c.reply_count || 0));
+      cm.replies.delete(id); cm.open.delete(id);
+    }
+    if(cm.replyTo && (cm.replyTo.targetId === id || cm.replyTo.rootId === id)) cm.replyTo = null;
+    cmRenderList();
+  }
+
+  (function setupComments(){
+    const sec = document.getElementById('cmSection');
+    sec.addEventListener('input', e=>{
+      const t = e.target;
+      if(t.id === 'cmInput' || t.id === 'cmReplyInput'){
+        t.style.height = 'auto';
+        t.style.height = Math.min(t.scrollHeight, 120) + 'px';
+        const btn = document.getElementById(t.id === 'cmInput' ? 'cmSend' : 'cmReplySend');
+        if(btn) btn.disabled = !t.value.trim();
+        if(t.id === 'cmReplyInput') cm.draft = t.value;
+      }
+    });
+    sec.addEventListener('click', e=>{
+      if(e.target.closest('#cmLogin')){ signInWithGoogle(); return; }
+      if(e.target.closest('#cmSend')){ cmSendMain(); return; }
+      if(e.target.closest('#cmReplySend')){ cmSendReply(); return; }
+      if(e.target.closest('#cmSort')){
+        cm.sort = cm.sort === 'new' ? 'top' : 'new';
+        cmLoad(true);
+        return;
+      }
+      if(e.target.closest('#cmMore')){ cmLoad(false); return; }
+      const b = e.target.closest('[data-cm]');
+      if(!b) return;
+      const act = b.dataset.cm;
+      if(act === 'like') cmToggleLike(b.dataset.id);
+      else if(act === 'delete') cmDelete(b.dataset.id);
+      else if(act === 'toggle') cmToggleReplies(b.dataset.id);
+      else if(act === 'cancel'){ cm.replyTo = null; cm.draft = ''; cmRenderList(); }
+      else if(act === 'reply'){
+        if(!currentUser){ showLoginToast('Masuk dengan Google dulu untuk membalas.'); return; }
+        const c = cmFindComment(b.dataset.id);
+        if(!c) return;
+        cm.replyTo = { targetId: c.id, rootId: b.dataset.root, name: c.author_name, isReply: !!c.parent_id };
+        cm.draft = '';
+        cmRenderList();
+      }
+    });
+    // foto profil gagal dimuat: ganti dengan huruf awal nama
+    sec.addEventListener('error', e=>{
+      const img = e.target;
+      if(img && img.tagName === 'IMG' && img.classList.contains('cm-av')){
+        const span = document.createElement('span');
+        span.className = img.className;
+        span.setAttribute('style', img.dataset.bg || '');
+        span.textContent = img.dataset.initial || '?';
+        img.replaceWith(span);
+      }
+    }, true);
+  })();
+
   async function openReader(title, num){
     const item = findItem(title);
     currentDetailTitle = title;
@@ -3286,6 +3720,7 @@
     pagesWrap.hidden = true;
     emptyMsg.hidden = true;
     endBox.hidden = true;
+    document.getElementById('cmSection').hidden = true;
 
     applyReaderPref();
     paintPlay();
@@ -3313,6 +3748,7 @@
       emptyMsg.hidden = false;
       endBox.hidden = false;
     }
+    cmInit(item, num);
   }
 
   function backFromReader(){
