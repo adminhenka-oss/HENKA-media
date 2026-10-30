@@ -2,6 +2,9 @@ import crypto from 'node:crypto';
 
 const ADMIN_EMAIL = 'adminhenka@gmail.com';
 
+// Gambar tidak pernah ditimpa (nama berisi waktu + acak), jadi aman di-cache selamanya.
+const CACHE_CONTROL = 'public, max-age=31536000, immutable';
+
 // ---- tanda tangan AWS Signature V4 (untuk URL unggah langsung ke R2) ----
 function hmac(key, data) { return crypto.createHmac('sha256', key).update(data).digest(); }
 function sha256hex(data) { return crypto.createHash('sha256').update(data).digest('hex'); }
@@ -88,12 +91,12 @@ export default async function handler(req, res) {
       region: 'auto',
       accessKeyId: process.env.R2_ACCESS_KEY_ID,
       secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
-      headers: { 'content-type': ct },
+      headers: { 'content-type': ct, 'cache-control': CACHE_CONTROL },
       expires: 900,
     });
 
     const publicUrl = `${process.env.R2_PUBLIC_URL.replace(/\/$/, '')}/${key}`;
-    return res.status(200).json({ uploadUrl, publicUrl, contentType: ct });
+    return res.status(200).json({ uploadUrl, publicUrl, contentType: ct, cacheControl: CACHE_CONTROL });
   } catch (e) {
     return res.status(500).json({ error: e.message || 'Gagal membuat izin unggah' });
   }
