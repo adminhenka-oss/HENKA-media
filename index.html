@@ -1320,17 +1320,9 @@
     return new File([blob], file.name.replace(/\.\w+$/, '') + '.jpg', { type:'image/jpeg' });
   }
 
-  // Unggah gambar: langsung dari browser ke R2 lewat izin sementara (/api/presign), supaya
-  // data gambar tidak lewat Vercel. Kalau cara itu gagal (mis. CORS R2 belum dipasang),
-  // otomatis memakai jalur lama lewat /api/upload.
-  let directUploadBroken = false;
-
-  function notifyDirectUploadFallback(reason){
-    const toast = document.getElementById('adminToast');
-    if(!toast) return;
-    toast.textContent = 'Unggah langsung ke R2 belum aktif (' + reason + '). Sementara memakai jalur lama yang memakai kuota Vercel. Cek pengaturan CORS bucket R2.';
-    toast.hidden = false;
-  }
+  // Unggah gambar: langsung dari browser ke R2 lewat izin sementara (/api/presign),
+  // supaya data gambar tidak lewat Vercel. Tidak ada jalur cadangan lewat server:
+  // kalau gagal, upload dicoba ulang (sampai 3x) lalu berhenti dengan pesan jelas.
 
   async function uploadDirect(file, folder, nameOverride, session){
     if(file.size > 15 * 1024 * 1024){
@@ -1350,29 +1342,17 @@
       if([400, 401, 403].includes(res.status)) err.fatal = true;
       throw err;
     }
-    const { uploadUrl, publicUrl } = await res.json();
-    const put = await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': ct }, body: file });
+    const { uploadUrl, publicUrl, cacheControl } = await res.json();
+    const putHeaders = { 'Content-Type': ct };
+    if(cacheControl) putHeaders['Cache-Control'] = cacheControl;   // harus sama dengan yang ditandatangani server
+    let put;
+    try{
+      put = await fetch(uploadUrl, { method: 'PUT', headers: putHeaders, body: file });
+    }catch(e){
+      throw new Error('Koneksi ke R2 gagal. Periksa internet atau pengaturan CORS bucket R2.');
+    }
     if(!put.ok) throw new Error('R2 menolak unggahan (status ' + put.status + ')');
     return publicUrl;
-  }
-
-  async function uploadViaServer(file, folder, nameOverride, session){
-    const dataUrl = await readFileAsDataURL(file);
-    const dataBase64 = dataUrl.split(',')[1];
-    if(dataBase64.length > 4300000){
-      throw new Error('Gambar "' + file.name + '" terlalu besar untuk jalur lama (maksimal sekitar 3 MB per gambar). Kecilkan dulu ukurannya.');
-    }
-    const res = await fetch('/api/upload', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-      body: JSON.stringify({ filename: nameOverride || file.name, contentType: file.type, dataBase64, folder })
-    });
-    if(!res.ok){
-      const err = await res.json().catch(()=>({}));
-      throw new Error(err.error || 'Upload gagal');
-    }
-    const data = await res.json();
-    return data.url;
   }
 
   async function uploadImage(file, folder, nameOverride){
@@ -1385,17 +1365,7 @@
     const { data: { session } } = await sb.auth.getSession();
     if(!session) throw new Error('Kamu harus masuk dengan Google dulu untuk mengunggah gambar.');
 
-    if(!directUploadBroken){
-      try{
-        return await uploadDirect(file, folder, nameOverride, session);
-      }catch(err){
-        if(err && err.fatal) throw err;
-        directUploadBroken = true;
-        console.warn('Unggah langsung ke R2 gagal, memakai jalur lama:', err);
-        notifyDirectUploadFallback(err && err.message ? err.message : 'tidak diketahui');
-      }
-    }
-    return uploadViaServer(file, folder, nameOverride, session);
+    return uploadDirect(file, folder, nameOverride, session);
   }
 
   const titles = { Manhwa: [], Manga: [], Manhua: [] };
@@ -1466,10 +1436,27 @@
 
   function coverStyle(item){
     if(item.cover){
-      return `background-image:url('${item.cover}'); background-size:cover; background-position:center;`;
+      return `background-size:cover; background-position:center; --bg:url('${item.cover}');`;
     }
     return `background: linear-gradient(150deg, ${item.c[0]}, ${item.c[1]});`;
   }
+
+  // Cover dimuat saat hampir terlihat saja (hemat kuota): coverStyle() hanya menyimpan alamat di --bg,
+  // lalu gambar baru dipasang ketika elemennya mendekati layar.
+  (function lazyCovers(){
+    const apply = el => { el.style.backgroundImage = 'var(--bg)'; };
+    const io = ('IntersectionObserver' in window)
+      ? new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting){ apply(e.target); io.unobserve(e.target); } }), { rootMargin:'300px' })
+      : null;
+    const watch = el => { if(io) io.observe(el); else apply(el); };
+    const scan = n => {
+      if(n.nodeType !== 1) return;
+      if(n.matches && n.matches('[style*="--bg"]')) watch(n);
+      if(n.querySelectorAll) n.querySelectorAll('[style*="--bg"]').forEach(watch);
+    };
+    new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(scan))).observe(document.documentElement, { childList:true, subtree:true });
+    if(document.body) scan(document.body);
+  })();
 
   const FLAGS = {
     Manhua: '<svg viewBox="0 0 30 20" xmlns="http://www.w3.org/2000/svg"><rect width="30" height="20" fill="#DE2910"/><polygon fill="#FFDE00" points="5.00,2.00 5.67,4.07 7.85,4.07 6.09,5.35 6.76,7.43 5.00,6.15 3.24,7.43 3.91,5.35 2.15,4.07 4.33,4.07"/><polygon fill="#FFDE00" points="9.14,2.51 9.62,1.97 9.25,1.34 9.91,1.63 10.39,1.08 10.33,1.80 11.00,2.09 10.29,2.25 10.22,2.97 9.85,2.35"/><polygon fill="#FFDE00" points="11.01,4.14 11.66,3.82 11.56,3.10 12.07,3.62 12.72,3.30 12.38,3.95 12.88,4.47 12.17,4.34 11.83,4.99 11.73,4.27"/><polygon fill="#FFDE00" points="11.04,6.73 11.76,6.70 11.96,6.00 12.21,6.68 12.94,6.66 12.37,7.10 12.62,7.79 12.01,7.38 11.44,7.83 11.64,7.13"/><polygon fill="#FFDE00" points="9.22,8.38 9.90,8.63 10.35,8.06 10.32,8.79 11.00,9.05 10.30,9.24 10.26,9.96 9.87,9.36 9.16,9.55 9.62,8.98"/></svg>',
@@ -2917,6 +2904,26 @@
     }).join('');
   }
 
+  // Ubah halaman JPG/PNG besar menjadi WebP (biasanya 50-70% lebih kecil). Dilewati kalau:
+  // sudah WebP/GIF, file kecil, tinggi > 16383 px (batas WebP), gagal diproses, atau hasilnya tidak lebih kecil.
+  const WEBP_QUALITY = 0.85;
+  async function pageToWebP(blob, name){
+    const keep = { blob, name, type: blob.type };
+    try{
+      if(!/^image\/(jpeg|png)$/.test(blob.type) || blob.size < 300 * 1024) return keep;
+      const bmp = await createImageBitmap(blob);
+      if(bmp.height > 16383 || bmp.width > 16383){ bmp.close && bmp.close(); return keep; }
+      const c = document.createElement('canvas');
+      c.width = bmp.width; c.height = bmp.height;
+      c.getContext('2d').drawImage(bmp, 0, 0);
+      bmp.close && bmp.close();
+      const out = await new Promise(r=>c.toBlob(r, 'image/webp', WEBP_QUALITY));
+      c.width = c.height = 0;
+      if(!out || out.type !== 'image/webp' || out.size >= blob.size) return keep;
+      return { blob: out, name: name.replace(/\.\w+$/, '') + '.webp', type: 'image/webp' };
+    }catch(e){ return keep; }
+  }
+
   async function prepareJob(job, files){
     job.blobs = [];
     job.prep = 0;
@@ -2925,7 +2932,8 @@
       if(!/^image\//.test(f.type || '')) throw new Error('"' + f.name + '" bukan file gambar (JPG/PNG/WEBP).');
       // salin ke memori sekarang, supaya tidak hilang walau file asli di HP berubah saat menunggu antrian
       const buf = await f.arrayBuffer();
-      job.blobs.push({ blob: new Blob([buf], { type: f.type }), name: f.name, type: f.type });
+      const packed = await pageToWebP(new Blob([buf], { type: f.type }), f.name);
+      job.blobs.push(packed);
       job.prep++;
       renderUploadQueue();
     }
