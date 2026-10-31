@@ -4445,6 +4445,205 @@
     try{ history.replaceState(null, '', location.pathname + location.search); }catch(e){}
   }
 
+  // ===== Navigasi: tombol Kembali HP/browser + alamat per halaman (#/judul/..., #/baca/...) =====
+  // Layar-layar lama tidak diubah. Router ini mengamati layar mana yang sedang tampil, lalu
+  // menyelaraskannya dengan riwayat browser (pushState). Saat tombol Kembali ditekan (popstate),
+  // layar dikembalikan ke entri sebelumnya, dan baru keluar situs kalau sudah di Beranda.
+  const Nav = (function(){
+    const $ = id => document.getElementById(id);
+    const HOME = { n:'home' };
+    const TABS = ['riwayat','koleksi','profil'];
+    const st = { i:0, stack:[], busy:false, pending:false, timer:null, ready:false };
+
+    function titleKey(title){
+      const it = findItem(title);
+      return it && it.supabaseId ? String(it.supabaseId) : 't~' + title;
+    }
+    function itemByKey(key){
+      if(key.indexOf('t~') === 0) return findItem(key.slice(2));
+      return allTitles().find(x=>String(x.supabaseId) === key) || null;
+    }
+    function routeUrl(r){
+      const base = location.pathname + location.search;
+      switch(r.n){
+        case 'detail':  return base + '#/judul/' + encodeURIComponent(titleKey(r.t));
+        case 'reader':  return base + '#/baca/' + encodeURIComponent(titleKey(r.t)) + '/' + r.c;
+        case 'riwayat': case 'koleksi': case 'profil': case 'admin': return base + '#/' + r.n;
+        case 'search':  return base + '#/cari';
+        case 'seeall':  return base + '#/semua/' + r.k + '/' + encodeURIComponent(r.g);
+        default:        return base;
+      }
+    }
+    function parseHash(){
+      const h = location.hash || '';
+      if(h.indexOf('#/') !== 0) return null;      // selain #/... (mis. data login Google) dibiarkan
+      const p = h.slice(2).split('/').map(s=>{ try{ return decodeURIComponent(s); }catch(e){ return s; } });
+      if(p[0] === 'judul' && p[1]){ const it = itemByKey(p[1]); return it ? { n:'detail', t:it.t } : null; }
+      if(p[0] === 'baca' && p[1] && p[2]){ const it = itemByKey(p[1]); return it ? { n:'reader', t:it.t, c:Number(p[2]) } : null; }
+      if(TABS.indexOf(p[0]) > -1) return { n:p[0] };
+      if(p[0] === 'admin') return { n:'admin' };
+      if(p[0] === 'cari') return { n:'search' };
+      if(p[0] === 'semua' && p[1] && p[2]) return { n:'seeall', k:p[1], g:p[2] };
+      return null;
+    }
+
+    // layar yang sedang tampil; null = sedang transisi (jangan diproses dulu)
+    function currentRoute(){
+      const vis = id => !$(id).hidden;
+      const sheet = vis('readerSheet') || vis('appSheet');
+      let r = null;
+      if(vis('readerView'))        r = { n:'reader', t:currentDetailTitle, c:Number(readerNum) };
+      else if(vis('detailView'))   r = { n:'detail', t:currentDetailTitle };
+      else if(vis('searchView'))   r = { n:'search' };
+      else if(vis('adminView'))    r = { n:'admin' };
+      else if(vis('seeAllView'))   r = seeAllState ? { n:'seeall', k:seeAllState.kind, g:seeAllState.genre } : null;
+      else if(vis('riwayatView'))  r = { n:'riwayat' };
+      else if(vis('koleksiView'))  r = { n:'koleksi' };
+      else if(vis('profileView'))  r = { n:'profil' };
+      else if(document.querySelector('main').style.display !== 'none') r = { n:'home' };
+      if(r && sheet) r.sheet = true;
+      return r;
+    }
+    function baseEq(a, b){
+      return !!a && !!b && a.n === b.n && a.t === b.t && a.c == b.c && a.k === b.k && a.g === b.g;
+    }
+    function routeEq(a, b){ return baseEq(a, b) && !!a.sheet === !!b.sheet; }
+
+    function leave(){
+      stopAutoScroll();
+      closeReaderSheet(); closeAppSheet();
+      if(!$('searchView').hidden){
+        $('searchInput').value = ''; $('searchOverlayInput').value = '';
+        searchReturnDetail = null; resetFilters();
+      }
+      ['readerView','detailView','searchView','adminView'].forEach(id=>{ $(id).hidden = true; });
+      document.querySelector('nav.bottom').style.display = '';
+      document.body.classList.remove('no-nav-pad');
+    }
+
+    // tampilkan layar sesuai rute (tanpa menambah riwayat)
+    async function apply(t){
+      closeReaderSheet(); closeAppSheet();
+      const cur = currentRoute();
+      if(cur && baseEq(cur, t)) return;
+      if((t.n === 'detail' || t.n === 'reader') && !findItem(t.t)) t = HOME;
+      switch(t.n){
+        case 'reader':
+          if(!(cur && cur.n === 'reader' && cur.t === t.t)){
+            if(!(cur && cur.n === 'detail' && cur.t === t.t)){ leave(); await openDetail(t.t); }
+          }
+          await openReader(t.t, t.c);
+          break;
+        case 'detail':  leave(); await openDetail(t.t); break;
+        case 'riwayat': leave(); showRiwayat(); break;
+        case 'koleksi': leave(); showKoleksi(); break;
+        case 'profil':  leave(); showProfile(); break;
+        case 'seeall':  leave(); showSeeAll(t.k, t.g); break;
+        case 'search':  leave(); openSearchOverlay(); break;
+        case 'admin':   leave(); if(isAdmin()) showAdmin(); else showHome(); break;
+        default:        leave(); showHome();
+      }
+    }
+
+    function store(i, r, replace){
+      const state = { henka:1, i:i, route:r };
+      try{
+        if(replace) history.replaceState(state, '', routeUrl(r));
+        else history.pushState(state, '', routeUrl(r));
+      }catch(e){}
+    }
+    function goTo(delta){
+      st.pending = true;
+      clearTimeout(st.timer);
+      st.timer = setTimeout(()=>{ st.pending = false; }, 600);   // jaga-jaga kalau popstate tidak datang
+      history.go(delta);
+    }
+
+    // dipanggil setiap layar berubah (setelah jeda singkat)
+    function sync(){
+      if(!st.ready || st.busy || st.pending) return;
+      const C = currentRoute();
+      if(!C) return;
+      const cur = st.stack[st.i];
+      if(routeEq(C, cur)) return;
+      // kembali ke layar yang pernah dikunjungi (tombol Kembali di dalam web, tombol Beranda)
+      for(let j = st.i - 1; j >= 0; j--){
+        if(routeEq(C, st.stack[j])){ goTo(j - st.i); return; }
+      }
+      // pindah chapter di reader, atau pindah antar tab: ganti entri, jangan menumpuk
+      const sameReader = cur && cur.n === 'reader' && C.n === 'reader' && cur.t === C.t && !cur.sheet && !C.sheet;
+      const tabToTab = cur && !cur.sheet && !C.sheet && TABS.indexOf(cur.n) > -1 && TABS.indexOf(C.n) > -1;
+      // dari reader ke detail judul yang sama = "kembali": ganti entri reader, jangan ditumpuk di atasnya
+      const readerToDetail = cur && cur.n === 'reader' && C.n === 'detail' && cur.t === C.t && !cur.sheet && !C.sheet;
+      if(sameReader || tabToTab || readerToDetail){ st.stack[st.i] = C; store(st.i, C, true); return; }
+      st.stack.length = st.i + 1;
+      st.stack.push(C); st.i++;
+      store(st.i, C, false);
+    }
+    function schedule(){
+      if(!st.ready) return;
+      clearTimeout(schedule.t);
+      schedule.t = setTimeout(sync, 90);
+    }
+
+    async function onPop(e){
+      st.pending = false; clearTimeout(st.timer);
+      const s = e.state;
+      let target;
+      if(s && s.henka){
+        st.i = s.i;
+        if(!st.stack[st.i]) st.stack[st.i] = s.route;
+        target = s.route;
+      } else {
+        // alamat diubah manual / tautan #/... diklik
+        target = parseHash() || HOME;
+        st.stack.length = st.i + 1; st.stack.push(target); st.i++;
+        store(st.i, target, true);
+      }
+      const C = currentRoute();
+      if(C && routeEq(C, target)) return;
+      st.busy = true;
+      try{ await apply(target); }catch(err){ console.error(err); }
+      st.busy = false;
+      const C2 = currentRoute();
+      if(C2 && !routeEq(C2, target)){ st.stack[st.i] = C2; store(st.i, C2, true); }
+    }
+
+    async function boot(){
+      const s = history.state;
+      const fromHash = parseHash();
+      if(s && s.henka){
+        // muat ulang di sesi yang sama: pulihkan layar terakhir
+        st.i = s.i; st.stack[st.i] = s.route;
+        const t = fromHash || s.route;
+        if(t.n !== 'home'){ st.busy = true; try{ await apply(t); }catch(e){} st.busy = false; }
+        const C = currentRoute() || HOME;
+        st.stack[st.i] = C; store(st.i, C, true);
+      } else {
+        // dibuka baru (atau lewat tautan): Beranda jadi dasar, tautan di atasnya
+        st.i = 0; st.stack = [HOME];
+        const hasRouteHash = (location.hash || '').indexOf('#/') === 0;   // hanya bersihkan alamat #/..., bukan data login
+        try{
+          if(hasRouteHash) history.replaceState({ henka:1, i:0, route:HOME }, '', routeUrl(HOME));
+          else history.replaceState({ henka:1, i:0, route:HOME }, '');
+        }catch(e){}
+        if(fromHash){
+          st.busy = true; try{ await apply(fromHash); }catch(e){} st.busy = false;
+          const C = currentRoute();
+          if(C && C.n !== 'home'){ st.stack.push(C); st.i = 1; store(1, C, false); }
+        }
+      }
+      window.addEventListener('popstate', onPop);
+      const mo = new MutationObserver(schedule);
+      ['readerView','detailView','searchView','adminView','seeAllView','riwayatView','koleksiView','profileView','readerSheet','appSheet']
+        .forEach(id=>mo.observe($(id), { attributes:true, attributeFilter:['hidden'] }));
+      mo.observe(document.querySelector('main'), { attributes:true, attributeFilter:['style'] });
+      ['readerChapterLabel','detailTitle'].forEach(id=>mo.observe($(id), { childList:true, characterData:true, subtree:true }));
+      st.ready = true;
+    }
+    return { boot };
+  })();
+
   (async function init(){
     await refreshAuthState();
     updateHeaderAvatar();
@@ -4455,6 +4654,7 @@
     selectGenre('Manhwa');
     renderFeatured();
     renderContinue();
+    await Nav.boot();
   })();
 })();
 </script>
