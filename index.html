@@ -168,8 +168,13 @@
   .card-meta > *{ white-space:nowrap; }
   .card-name{
     font-size:0.86rem; font-weight:700; margin-top:8px;
+    line-height:1.3; min-height: 2.6em;
+    display:flex; align-items:center; justify-content:center;   /* judul di tengah blok, secara vertikal dan horizontal */
+    text-align:center;
+  }
+  .card-name > span{
     display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
-    overflow:hidden; line-height:1.3; min-height: 2.6em;
+    overflow:hidden; min-width:0; text-align:center;
   }
 
   .grid{
@@ -190,8 +195,8 @@
   .pg-gap{ color: var(--text-faint); padding:0 2px; }
   .grid.grid-2{ grid-template-columns: repeat(2, minmax(0, 1fr)); gap:16px 14px; }
   .grid.grid-2 .cover{ height:auto; aspect-ratio:3 / 4; }
-  .upd-meta{ display:flex; align-items:center; gap:6px; margin-top:2px; font-size:0.74rem; color: var(--text-faint); }
-  .upd-meta i{ font-style:normal; opacity:0.6; }
+  .upd-meta{ display:flex; align-items:center; justify-content:space-between; gap:6px; margin-top:2px; font-size:0.74rem; color: var(--text-faint); }
+  .upd-meta > span{ white-space:nowrap; }
   .upd-chs{ display:flex; flex-direction:column; gap:6px; margin-top:8px; }
   .upd-ch{
     display:flex; justify-content:space-between; align-items:center; flex-wrap:nowrap; gap:6px;
@@ -1488,7 +1493,7 @@
           </div>
           ${item.cover ? '' : `<span class="cover-title">${item.t}</span>`}
         </div>
-        <div class="card-name">${item.t}</div>
+        <div class="card-name"><span>${item.t}</span></div>
         <div class="card-meta"><span>⊙ ${item.views}</span><span>${item.ch}</span></div>
       </div>`;
   }
@@ -1561,8 +1566,8 @@
           <div class="badge-row">${flagBadge(item)}</div>
           ${item.cover ? '' : `<span class="cover-title">${item.t}</span>`}
         </div>
-        <div class="card-name">${item.t}</div>
-        <div class="upd-meta"><span>${item.tag}</span>${n ? `<i>•</i><span>Ch. ${n}</span>` : ''}</div>
+        <div class="card-name"><span>${item.t}</span></div>
+        <div class="upd-meta"><span>${item.tag}</span>${n ? `<span>Ch. ${n}</span>` : ''}</div>
         <div class="upd-chs" id="updch-${id}"><div class="upd-ch skel"></div><div class="upd-ch skel"></div></div>
       </div>`;
   }
@@ -1661,7 +1666,7 @@
             <div class="badge-row">${flagBadge(item)}</div>
             ${item.cover ? '' : `<span class="cover-title">${item.t}</span>`}
           </div>
-          <div class="card-name">${item.t}</div>
+          <div class="card-name"><span>${item.t}</span></div>
           <div class="progress-track"><div class="progress-fill" style="width:${p.pct}%"></div></div>
           <div class="card-meta"><span>Lanjut Chapter ${h.read}</span></div>
         </div>`;
