@@ -469,22 +469,26 @@
   .search-empty{ padding:14px 2px 22px; color: var(--text-faint); font-size:0.85rem; }
   .circle-btn.has-active{ background: var(--accent); border-color: transparent; }
   .filter-panel{
-    margin: 0 20px 18px; padding:16px; border-radius:16px;
+    margin: 0 20px 18px; padding:16px 16px 0; border-radius:16px;
     background: var(--bg-panel); border:1px solid var(--border);
+    max-height:72vh; overflow-y:auto; overscroll-behavior:contain;
   }
+  .filter-group-label{ font-size:0.8rem; font-weight:800; color: var(--text-muted); margin:2px 0 8px; }
   .filter-panel-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
   .filter-panel-head h3{ margin:0; font-size:1rem; font-weight:800; }
   .filter-reset-btn{ background:none; border:none; color: var(--text-faint); font-weight:700; font-size:0.82rem; }
-  .filter-chip-grid{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
+  .filter-chip-grid{ display:flex; flex-wrap:wrap; gap:7px; margin-bottom:14px; }
   .filter-chip{
-    padding:8px 14px; border-radius: var(--radius-pill); border:1px solid var(--accent-deep);
-    background:transparent; color: var(--text-muted); font-size:0.82rem; font-weight:600;
+    padding:6px 12px; border-radius: var(--radius-pill); border:1px solid var(--accent-deep);
+    background:transparent; color: var(--text-muted); font-size:0.8rem; font-weight:600;
   }
   .filter-chip.active{ background: var(--accent); color:#fff; border-color: transparent; }
   .filter-apply-btn{
     width:100%; padding:12px; border-radius: var(--radius-pill); border:none;
     background: var(--accent); color:#fff; font-weight:800; font-size:0.88rem;
   }
+  /* bilah tombol menempel di dasar panel dan menutupi chip yang digulir di belakangnya */
+  .filter-apply-bar{ position:sticky; bottom:0; background: var(--bg-panel); padding:10px 0 16px; }
 
   .empty-note{ color: var(--text-faint); font-size:0.85rem; padding:10px 2px; }
   .seeall-view{ background: var(--bg); min-height:100vh; }
@@ -1068,11 +1072,16 @@
   </div>
   <div class="filter-panel" id="filterPanel" hidden>
     <div class="filter-panel-head">
-      <h3>Filter Genre</h3>
+      <h3>Filter</h3>
       <button class="filter-reset-btn" id="filterReset">Reset</button>
     </div>
+    <div class="filter-group-label">Genre</div>
     <div class="filter-chip-grid" id="filterChipGrid"></div>
-    <button class="filter-apply-btn" id="filterApplyBtn">Terapkan Filter</button>
+    <div class="filter-group-label">Status</div>
+    <div class="filter-chip-grid" id="filterStatusGrid"></div>
+    <div class="filter-group-label">Format</div>
+    <div class="filter-chip-grid" id="filterFormatGrid"></div>
+    <div class="filter-apply-bar"><button class="filter-apply-btn" id="filterApplyBtn">Terapkan Filter</button></div>
   </div>
   <div class="search-results" id="searchResultsWrap"></div>
 </div>
@@ -1112,6 +1121,7 @@
               <label>Status</label>
               <select id="admStatus">
                 <option value="Ongoing">Ongoing</option>
+                <option value="Hiatus">Hiatus</option>
                 <option value="Completed">Completed</option>
               </select>
             </div>
@@ -2123,7 +2133,7 @@
       poster.hidden = true;
     }
     document.getElementById('detailStatus').textContent =
-      item.status === 'Ongoing' ? 'Masih berlanjut' : 'Tamat';
+      item.status === 'Ongoing' ? 'Masih berlanjut' : item.status === 'Hiatus' ? 'Hiatus' : 'Tamat';
     document.getElementById('detailTitle').textContent = item.t;
 
     document.getElementById('detailChips').textContent = '★ ' + item.rating;
@@ -4014,15 +4024,22 @@
     }
   });
 
+  // Genre diurutkan A-Z otomatis; tambah/ubah genre cukup di daftar ini
   const genreList = [
-    "Movie","Action","Adventure","Comedy","Demons","Drama","Fantasy","Game",
-    "Harem","Historical","Horror","Josei","Magic","Martial Arts","Mecha",
-    "Military","Music","Mystery","Psychological","Parody","Police","Romance",
-    "Samurai","School","Sci-Fi","Seinen","Shoujo","Shoujo Ai","Shounen",
-    "Slice of Life","Sports","Space","Super Power","Supernatural"
-  ];
+    "Action","Comedy","Adventure","Drama","Fantasy","Romance","Slice of Life","Horror","Mystery","Thriller",
+    "Psychological","Sci-Fi","Supernatural","Tragedy","Historical","Sports","Crime","Medical","Music","Murim",
+    "Martial Arts","Cultivation","Reincarnation","Regression","Transmigration","Isekai","System","Dungeon",
+    "Tower Climbing","Survival","Post-Apocalyptic","Magic","Mecha","Harem","School Life","Super Power","Game"
+  ].sort((x, y)=>x.localeCompare(y, 'en', { sensitivity:'base' }));
+  const STATUS_OPTIONS = ['Ongoing', 'Hiatus', 'Completed'];
+  const FORMAT_OPTIONS = ['Manhwa', 'Manga', 'Manhua'];
 
-  let selectedFilters = new Set();
+  let selectedFilters = new Set();      // genre (semua yang dipilih harus cocok)
+  let selectedStatus  = new Set();      // status (salah satu cocok)
+  let selectedFormat  = new Set();      // format/kategori (salah satu cocok)
+  const hasActiveFilters = ()=> selectedFilters.size + selectedStatus.size + selectedFormat.size > 0;
+  const norm = v => String(v || '').trim().toLowerCase();
+  const formatOf = it => it.category || ['Manhwa','Manga','Manhua'].find(c=>titles[c].includes(it)) || '';
 
   // Saat belum mengetik atau memilih filter: tampilkan Update terbaru (manhwa, manga, manhua bercampur)
   const SEARCH_UPDATE_PAGE = 30;
@@ -4075,19 +4092,21 @@
   function runSearch(query){
     const q = query.trim().toLowerCase();
     const wrap = document.getElementById('searchResultsWrap');
-    if(!q && selectedFilters.size === 0){ renderSearchUpdates(); return; }
+    if(!q && !hasActiveFilters()){ renderSearchUpdates(); return; }
     const results = allTitles().filter(it=>{
       const matchesQuery = !q ||
         it.t.toLowerCase().includes(q) ||
         it.author.toLowerCase().includes(q) ||
         it.genres.some(g=>g.toLowerCase().includes(q));
-      const matchesFilter = selectedFilters.size === 0 ||
-        [...selectedFilters].every(g=>it.genres.includes(g));
-      return matchesQuery && matchesFilter;
+      const itGenres = it.genres.map(norm);
+      const matchesGenre  = selectedFilters.size === 0 || [...selectedFilters].every(g=>itGenres.includes(norm(g)));
+      const matchesStatus = selectedStatus.size === 0 || [...selectedStatus].some(v=>norm(v) === norm(it.status));
+      const matchesFormat = selectedFormat.size === 0 || [...selectedFormat].some(v=>norm(v) === norm(formatOf(it)));
+      return matchesQuery && matchesGenre && matchesStatus && matchesFormat;
     });
     const label = q
       ? `${results.length} hasil untuk "${query}"`
-      : `${results.length} hasil untuk filter: ${[...selectedFilters].join(', ')}`;
+      : `${results.length} hasil untuk filter: ${[...selectedFilters, ...selectedStatus, ...selectedFormat].join(', ')}`;
     if(results.length === 0){
       wrap.innerHTML = `<div class="search-empty">Tidak ada hasil yang cocok.</div>`;
       return;
@@ -4105,9 +4124,12 @@
   }
 
   function renderFilterChips(){
-    document.getElementById('filterChipGrid').innerHTML = genreList.map(g=>
-      `<button class="filter-chip ${selectedFilters.has(g)?'active':''}" data-genre="${g}">${g}</button>`
+    const chips = (list, set, group)=> list.map(v=>
+      `<button type="button" class="filter-chip ${set.has(v)?'active':''}" data-group="${group}" data-value="${v}">${v}</button>`
     ).join('');
+    document.getElementById('filterChipGrid').innerHTML  = chips(genreList, selectedFilters, 'genre');
+    document.getElementById('filterStatusGrid').innerHTML = chips(STATUS_OPTIONS, selectedStatus, 'status');
+    document.getElementById('filterFormatGrid').innerHTML = chips(FORMAT_OPTIONS, selectedFormat, 'format');
   }
 
   document.getElementById('filterToggleBtn').addEventListener('click', ()=>{
@@ -4116,16 +4138,17 @@
     if(!panel.hidden) renderFilterChips();
   });
 
-  document.getElementById('filterChipGrid').addEventListener('click', e=>{
+  document.getElementById('filterPanel').addEventListener('click', e=>{
     const chip = e.target.closest('.filter-chip');
     if(!chip) return;
-    const g = chip.dataset.genre;
-    if(selectedFilters.has(g)){ selectedFilters.delete(g); } else { selectedFilters.add(g); }
+    const set = chip.dataset.group === 'status' ? selectedStatus : chip.dataset.group === 'format' ? selectedFormat : selectedFilters;
+    const v = chip.dataset.value;
+    if(set.has(v)) set.delete(v); else set.add(v);
     chip.classList.toggle('active');
   });
 
   document.getElementById('filterReset').addEventListener('click', ()=>{
-    selectedFilters.clear();
+    selectedFilters.clear(); selectedStatus.clear(); selectedFormat.clear();
     renderFilterChips();
     document.getElementById('filterToggleBtn').classList.remove('has-active');
     runSearch(document.getElementById('searchOverlayInput').value);
@@ -4133,7 +4156,7 @@
 
   document.getElementById('filterApplyBtn').addEventListener('click', ()=>{
     document.getElementById('filterPanel').hidden = true;
-    document.getElementById('filterToggleBtn').classList.toggle('has-active', selectedFilters.size > 0);
+    document.getElementById('filterToggleBtn').classList.toggle('has-active', hasActiveFilters());
     runSearch(document.getElementById('searchOverlayInput').value);
   });
 
@@ -4146,7 +4169,7 @@
     runSearch(startVal);
     loadActivity().then(changed=>{
       const cur = document.getElementById('searchOverlayInput').value.trim();
-      if(changed && !cur && selectedFilters.size === 0 && !document.getElementById('searchView').hidden) renderSearchUpdates();
+      if(changed && !cur && !hasActiveFilters() && !document.getElementById('searchView').hidden) renderSearchUpdates();
     });
     hideAllTabs();
     document.getElementById('searchView').hidden = false;
@@ -4158,7 +4181,7 @@
   let searchReturnDetail = null;
 
   function resetFilters(){
-    selectedFilters.clear();
+    selectedFilters.clear(); selectedStatus.clear(); selectedFormat.clear();
     document.getElementById('filterToggleBtn').classList.remove('has-active');
   }
 
@@ -4196,7 +4219,7 @@
     searchReturnDetail = document.getElementById('detailTitle').textContent;
     document.getElementById('detailView').hidden = true;
     document.getElementById('searchInput').value = '';
-    selectedFilters = new Set([genre]);
+    selectedFilters = new Set([genre]); selectedStatus.clear(); selectedFormat.clear();
     openSearchOverlay();
     document.getElementById('filterToggleBtn').classList.add('has-active');
   }
