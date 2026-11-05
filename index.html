@@ -304,6 +304,13 @@
     display:flex; justify-content:space-between; align-items:center;
     padding:14px 4px; border-bottom:1px solid var(--border);
   }
+  .season-divider{
+    display:flex; align-items:center; gap:12px; margin:14px 0 6px;
+    color: var(--accent, #9b6bff); font-size:0.7rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase;
+  }
+  .season-divider::before, .season-divider::after{ content:''; flex:1; height:1px; }
+  .season-divider::before{ background: linear-gradient(90deg, transparent, var(--accent, #9b6bff)); }
+  .season-divider::after{ background: linear-gradient(270deg, transparent, var(--accent, #9b6bff)); }
   .chapter-row-title{ font-weight:700; font-size:0.9rem; }
   .chapter-row-date{ font-size:0.76rem; color: var(--text-faint); }
   .chapter-row.read .chapter-row-title{ color: var(--text-faint); font-weight:600; }
@@ -1135,6 +1142,11 @@
             <input type="text" id="admArtist" placeholder="Nama artis">
           </div>
           <div class="admin-field">
+            <label>Season baru dimulai dari chapter (opsional)</label>
+            <input type="text" id="admSeasonStarts" inputmode="decimal" placeholder="Contoh: 41  atau  41, 90">
+            <small style="display:block;margin-top:5px;color:var(--text-faint);font-size:0.74rem">Isi nomor chapter pertama tiap season baru. Contoh 41 = muncul penanda “Season 1 End” di antara Chapter 40 dan 41. Kosongkan jika tidak ada season.</small>
+          </div>
+          <div class="admin-field">
             <label>Cover (opsional)</label>
             <input type="file" id="admCoverFile">
           </div>
@@ -1415,6 +1427,7 @@
       seq: ++titleSeq,
       synopsis: row.synopsis || '',
       artist: row.artist || '',
+      seasonStarts: (Array.isArray(row.season_starts) ? row.season_starts : []).map(Number).filter(n=>isFinite(n) && n > 0).sort((a,b)=>a-b),
       isRecommended: !!row.is_recommended,
       isFeatured: !!row.is_featured,
       isPopular: !!row.is_popular,
@@ -1867,16 +1880,30 @@
 
   let currentDetailTitle = null;
 
+  // Penanda season: seasonStarts = [41, 90] -> "Season 1 End" di antara chapter 40 dan 41, "Season 2 End" di antara 89 dan 90.
+  // Dihitung saat tampil, jadi data chapter tidak perlu diubah. Berlaku untuk urutan terbaru maupun terlama.
+  function seasonEndBetween(starts, a, b){
+    if(!starts || !starts.length) return 0;
+    const lo = Math.min(Number(a), Number(b)), hi = Math.max(Number(a), Number(b));
+    for(let k = 0; k < starts.length; k++){ if(lo < starts[k] && hi >= starts[k]) return k + 1; }
+    return 0;
+  }
+  const seasonDividerHTML = n => `<div class="season-divider" role="separator"><span>Season ${n} End</span></div>`;
+
   function renderChapterList(){
     const ordered = chapterAscending ? [...currentChapters].reverse() : currentChapters;
     const it = findItem(currentDetailTitle);
     const entry = (it && it.supabaseId) ? lib.h[String(it.supabaseId)] : null;
     const done = new Set(entry ? (entry.chs || [entry.read]).map(Number) : []);
-    document.getElementById('chapterList').innerHTML = ordered.map(c=>`
+    const starts = (it && it.seasonStarts) || [];
+    document.getElementById('chapterList').innerHTML = ordered.map((c, i)=>{
+      const sep = i > 0 ? seasonEndBetween(starts, ordered[i-1].num, c.num) : 0;
+      return (sep ? seasonDividerHTML(sep) : '') + `
       <div class="chapter-row ${done.has(Number(c.num)) ? 'read' : ''}" data-num="${c.num}">
         <span class="chapter-row-title">Chapter ${c.num}</span>
         <span class="chapter-row-date">${c.date}</span>
-      </div>`).join('');
+      </div>`;
+    }).join('');
   }
 
   document.getElementById('chapterList').addEventListener('click', e=>{
@@ -3315,10 +3342,15 @@
     const itm = findItem(currentDetailTitle);
     const ent = (itm && itm.supabaseId) ? lib.h[String(itm.supabaseId)] : null;
     const readSet = new Set(ent ? (ent.chs || [ent.read]).map(Number) : []);
-    const rows = [...currentChapters].sort((a,b)=>Number(b.num) - Number(a.num)).map(c=>`
+    const sorted = [...currentChapters].sort((a,b)=>Number(b.num) - Number(a.num));
+    const starts = (itm && itm.seasonStarts) || [];
+    const rows = sorted.map((c, i)=>{
+      const sep = i > 0 ? seasonEndBetween(starts, sorted[i-1].num, c.num) : 0;
+      return (sep ? seasonDividerHTML(sep) : '') + `
       <div class="rs-chapter ${Number(c.num) === Number(readerNum) ? 'current' : ''} ${readSet.has(Number(c.num)) ? 'read' : ''}" data-num="${c.num}">
         <span>Chapter ${c.num}</span><small>${Number(c.num) === Number(readerNum) ? 'Sedang dibaca' : ''}</small>
-      </div>`).join('');
+      </div>`;
+    }).join('');
     openReaderSheet(`<h4>Daftar chapter</h4>${rows || '<div class="reader-empty" style="padding:30px 0">Belum ada chapter.</div>'}`);
     const cur = document.querySelector('#readerSheetBody .rs-chapter.current');
     if(cur) cur.scrollIntoView({ block:'center' });
@@ -3881,6 +3913,7 @@
     document.getElementById('admViews').value = it.views === '0' ? '' : it.views;
     document.getElementById('admSynopsis').value = it.synopsis || '';
     document.getElementById('admArtist').value = it.artist || '';
+    document.getElementById('admSeasonStarts').value = (it.seasonStarts || []).join(', ');
     document.getElementById('admRecommended').checked = !!it.isRecommended;
     document.getElementById('admFeatured').checked = !!it.isFeatured;
     document.getElementById('admPopular').checked = !!it.isPopular;
@@ -3916,6 +3949,13 @@
     const views = document.getElementById('admViews').value.trim() || '0';
     const synopsis = document.getElementById('admSynopsis').value.trim();
     const artist = document.getElementById('admArtist').value.trim();
+    const seasonRaw = document.getElementById('admSeasonStarts').value.trim();
+    const seasonStarts = [...new Set(seasonRaw.split(/[,;\s]+/).filter(Boolean).map(Number).filter(n=>isFinite(n) && n > 0))].sort((a,b)=>a-b);
+    if(seasonRaw && !seasonStarts.length){
+      const t = document.getElementById('adminToast');
+      t.textContent = 'Season: isi nomor chapter berupa angka, mis. 41 atau 41, 90.'; t.hidden = false;
+      return;
+    }
     const isRec = document.getElementById('admRecommended').checked;
     const isFeat = document.getElementById('admFeatured').checked;
     const isPop = document.getElementById('admPopular').checked;
@@ -3942,6 +3982,8 @@
         genres: [mainGenre, ...extra],
         synopsis: synopsis || null,
         ...((artist || (editingItem && (titles[editingItem.cat].find(x=>x.supabaseId === editingItem.id) || {}).artist)) ? { artist: artist || null } : {}),
+        // kolom season hanya dikirim jika diisi, atau jika sebelumnya berisi dan sekarang dikosongkan
+        ...((seasonStarts.length || (editingItem && ((titles[editingItem.cat].find(x=>x.supabaseId === editingItem.id) || {}).seasonStarts || []).length)) ? { season_starts: seasonStarts.length ? seasonStarts : null } : {}),
         is_recommended: isRec,
         ...((isFeat || (editingItem && (titles[editingItem.cat].find(x=>x.supabaseId === editingItem.id) || {}).isFeatured)) ? { is_featured: isFeat } : {}),
         is_popular: isPop
