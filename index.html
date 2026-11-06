@@ -311,6 +311,10 @@
   .season-divider::before, .season-divider::after{ content:''; flex:1; height:1px; }
   .season-divider::before{ background: linear-gradient(90deg, transparent, var(--accent, #9b6bff)); }
   .season-divider::after{ background: linear-gradient(270deg, transparent, var(--accent, #9b6bff)); }
+  .up-badge{
+    display:inline-block; margin-left:8px; padding:2px 7px; border-radius:6px; vertical-align:middle;
+    background:#e11d1d; color:#fff; font-size:0.62rem; font-weight:800; letter-spacing:0.04em; line-height:1.4;
+  }
   .chapter-row-title{ font-weight:700; font-size:0.9rem; }
   .chapter-row-date{ font-size:0.76rem; color: var(--text-faint); }
   .chapter-row.read .chapter-row-title{ color: var(--text-faint); font-weight:600; }
@@ -1874,7 +1878,8 @@
     if(error || !data || data.length === 0) return [];
     return data.map(row=>({
       num: row.chapter_num,
-      date: relativeTime(row.updated_at || row.created_at) || 'Tersimpan'
+      date: relativeTime(row.updated_at || row.created_at) || 'Tersimpan',
+      at: Date.parse(row.updated_at || row.created_at) || 0
     }));
   }
 
@@ -1888,6 +1893,9 @@
     for(let k = 0; k < starts.length; k++){ if(lo < starts[k] && hi >= starts[k]) return k + 1; }
     return 0;
   }
+  // Tanda "UP" pada chapter yang baru diunggah; hilang otomatis setelah UP_DAYS hari (mengikuti waktu yang tampil di daftar)
+  const UP_DAYS = 3;
+  const upBadgeHTML = c => (c && c.at && (Date.now() - c.at) < UP_DAYS * 86400000) ? '<span class="up-badge">UP</span>' : '';
   const seasonDividerHTML = n => `<div class="season-divider" role="separator"><span>Season ${n} End</span></div>`;
 
   function renderChapterList(){
@@ -1900,7 +1908,7 @@
       const sep = i > 0 ? seasonEndBetween(starts, ordered[i-1].num, c.num) : 0;
       return (sep ? seasonDividerHTML(sep) : '') + `
       <div class="chapter-row ${done.has(Number(c.num)) ? 'read' : ''}" data-num="${c.num}">
-        <span class="chapter-row-title">Chapter ${c.num}</span>
+        <span class="chapter-row-title">Chapter ${c.num}${upBadgeHTML(c)}</span>
         <span class="chapter-row-date">${c.date}</span>
       </div>`;
     }).join('');
@@ -3348,7 +3356,7 @@
       const sep = i > 0 ? seasonEndBetween(starts, sorted[i-1].num, c.num) : 0;
       return (sep ? seasonDividerHTML(sep) : '') + `
       <div class="rs-chapter ${Number(c.num) === Number(readerNum) ? 'current' : ''} ${readSet.has(Number(c.num)) ? 'read' : ''}" data-num="${c.num}">
-        <span>Chapter ${c.num}</span><small>${Number(c.num) === Number(readerNum) ? 'Sedang dibaca' : ''}</small>
+        <span>Chapter ${c.num}${upBadgeHTML(c)}</span><small>${Number(c.num) === Number(readerNum) ? 'Sedang dibaca' : ''}</small>
       </div>`;
     }).join('');
     openReaderSheet(`<h4>Daftar chapter</h4>${rows || '<div class="reader-empty" style="padding:30px 0">Belum ada chapter.</div>'}`);
