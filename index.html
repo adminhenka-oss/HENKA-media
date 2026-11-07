@@ -312,10 +312,12 @@
   .season-divider::before{ background: linear-gradient(90deg, transparent, var(--accent, #9b6bff)); }
   .season-divider::after{ background: linear-gradient(270deg, transparent, var(--accent, #9b6bff)); }
   .up-badge{
-    display:inline-block; margin-left:8px; padding:2px 7px; border-radius:6px; vertical-align:middle;
-    background:#e11d1d; color:#fff; font-size:0.62rem; font-weight:800; letter-spacing:0.04em; line-height:1.4;
+    display:inline-block; margin-left:7px; padding:1px 5px; border-radius:4px; flex:none;
+    background:#e11d1d; color:#fff; font-size:0.44rem; font-weight:800; letter-spacing:0.04em; line-height:1.45;
   }
-  .chapter-row-title{ font-weight:700; font-size:0.9rem; }
+  .ch-num{ display:inline-block; font-variant-numeric:tabular-nums; }
+  .rs-title{ display:inline-flex; align-items:center; }
+  .chapter-row-title{ display:flex; align-items:center; font-weight:700; font-size:0.9rem; }
   .chapter-row-date{ font-size:0.76rem; color: var(--text-faint); }
   .chapter-row.read .chapter-row-title{ color: var(--text-faint); font-weight:600; }
   .chapter-row.read .chapter-row-date{ opacity:0.65; }
@@ -1894,8 +1896,19 @@
     return 0;
   }
   // Tanda "UP" pada chapter yang baru diunggah; hilang otomatis setelah UP_DAYS hari (mengikuti waktu yang tampil di daftar)
-  const UP_DAYS = 3;
-  const upBadgeHTML = c => (c && c.at && (Date.now() - c.at) < UP_DAYS * 86400000) ? '<span class="up-badge">UP</span>' : '';
+  const UP_DAYS = 3;   // lama tanda tampil (hari)
+  const UP_MAX = 3;    // maksimal jumlah chapter bertanda (yang nomornya tertinggi)
+  const upChapterSet = list => new Set(
+    [...list].sort((a, b)=>Number(b.num) - Number(a.num)).slice(0, UP_MAX)
+      .filter(c=>c.at && (Date.now() - c.at) < UP_DAYS * 86400000).map(c=>String(c.num)));
+  // Label "Chapter N": nomor diberi lebar minimal sebanyak digit terpanjang di antara chapter bertanda UP,
+  // sehingga tanda UP lurus satu kolom tetapi jaraknya tetap rapat ke teks.
+  const chLabelHTML = (c, set) => {
+    const w = (set && set.size) ? Math.max(...[...set].map(n=>n.length)) : 0;
+    const isUp = set && set.has(String(c.num));
+    return `<span class="ch-label">Chapter <span class="ch-num"${isUp && w ? ` style="min-width:${w}ch"` : ''}>${c.num}</span></span>`;
+  };
+  const upBadgeHTML = (c, set) => (set && set.has(String(c.num))) ? '<span class="up-badge">UP</span>' : '';
   const seasonDividerHTML = n => `<div class="season-divider" role="separator"><span>Season ${n} End</span></div>`;
 
   function renderChapterList(){
@@ -1904,11 +1917,12 @@
     const entry = (it && it.supabaseId) ? lib.h[String(it.supabaseId)] : null;
     const done = new Set(entry ? (entry.chs || [entry.read]).map(Number) : []);
     const starts = (it && it.seasonStarts) || [];
+    const up = upChapterSet(currentChapters);
     document.getElementById('chapterList').innerHTML = ordered.map((c, i)=>{
       const sep = i > 0 ? seasonEndBetween(starts, ordered[i-1].num, c.num) : 0;
       return (sep ? seasonDividerHTML(sep) : '') + `
       <div class="chapter-row ${done.has(Number(c.num)) ? 'read' : ''}" data-num="${c.num}">
-        <span class="chapter-row-title">Chapter ${c.num}${upBadgeHTML(c)}</span>
+        <span class="chapter-row-title">${chLabelHTML(c, up)}${upBadgeHTML(c, up)}</span>
         <span class="chapter-row-date">${c.date}</span>
       </div>`;
     }).join('');
@@ -3352,11 +3366,12 @@
     const readSet = new Set(ent ? (ent.chs || [ent.read]).map(Number) : []);
     const sorted = [...currentChapters].sort((a,b)=>Number(b.num) - Number(a.num));
     const starts = (itm && itm.seasonStarts) || [];
+    const up = upChapterSet(currentChapters);
     const rows = sorted.map((c, i)=>{
       const sep = i > 0 ? seasonEndBetween(starts, sorted[i-1].num, c.num) : 0;
       return (sep ? seasonDividerHTML(sep) : '') + `
       <div class="rs-chapter ${Number(c.num) === Number(readerNum) ? 'current' : ''} ${readSet.has(Number(c.num)) ? 'read' : ''}" data-num="${c.num}">
-        <span>Chapter ${c.num}${upBadgeHTML(c)}</span><small>${Number(c.num) === Number(readerNum) ? 'Sedang dibaca' : ''}</small>
+        <span class="rs-title">${chLabelHTML(c, up)}${upBadgeHTML(c, up)}</span><small>${Number(c.num) === Number(readerNum) ? 'Sedang dibaca' : ''}</small>
       </div>`;
     }).join('');
     openReaderSheet(`<h4>Daftar chapter</h4>${rows || '<div class="reader-empty" style="padding:30px 0">Belum ada chapter.</div>'}`);
