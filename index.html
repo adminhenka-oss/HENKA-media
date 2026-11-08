@@ -2772,11 +2772,28 @@
     return data.image_urls;
   }
 
+  // Cek apakah chapter dengan nomor itu sudah ada di judul tersebut. true / false, atau null kalau gagal dicek.
+  async function chapterExistsRemote(titleId, num){
+    try{
+      const { data, error } = await sb.from('chapters').select('chapter_num')
+        .eq('title_id', titleId).eq('chapter_num', Number(num)).limit(1);
+      if(error) return null;
+      return !!(data && data.length);
+    }catch(e){ return null; }
+  }
+  const chapterExistsMessage = (num, titleName)=>
+    `Chapter ${num}${titleName ? ` di “${titleName}”` : ''} sudah ada. Cek lagi nomornya, atau hapus chapter itu dulu kalau memang ingin menggantinya.`;
+
+  // insert (bukan upsert): chapter yang sudah ada tidak pernah tertimpa diam-diam
   async function saveChapterImagesRemote(titleId, num, urls){
     const { error } = await sb
       .from('chapters')
-      .upsert({ title_id: titleId, chapter_num: Number(num), image_urls: urls }, { onConflict: 'title_id,chapter_num' });
-    if(error) throw error;
+      .insert({ title_id: titleId, chapter_num: Number(num), image_urls: urls });
+    if(error){
+      if(error.code === '23505' || /duplicate key|unique constraint/i.test(error.message || ''))
+        throw new Error(chapterExistsMessage(num));
+      throw error;
+    }
   }
 
   function readViaFileReader(file){
@@ -3047,6 +3064,13 @@
   async function runUploadJob(job){
     job.status = 'uploading';
     job.error = null;
+    if(!job.urls || !job.urls.some(Boolean)){
+      // belum ada halaman yang terunggah: pastikan nomornya masih kosong, supaya tidak membuang kuota
+      if(await chapterExistsRemote(job.titleId, job.num)){
+        job.status = 'error'; job.error = chapterExistsMessage(job.num, job.titleName); job.blobs = [];
+        renderUploadQueue(); return;
+      }
+    }
     if(!job.urls) job.urls = new Array(job.total);
     job.done = job.urls.filter(Boolean).length;
     renderUploadQueue();
@@ -3129,8 +3153,10 @@
     renderUploadQueue();
   });
 
-  document.getElementById('chapterImageForm').addEventListener('submit', e=>{
+  let chapterSubmitBusy = false;
+  document.getElementById('chapterImageForm').addEventListener('submit', async e=>{
     e.preventDefault();
+    if(chapterSubmitBusy) return;
     const sel = document.getElementById('chImgTitle');
     const titleId = sel.value;
     const rawNum = document.getElementById('chImgNum').value.trim().replace(',', '.');
@@ -3151,6 +3177,21 @@
     if(dup){
       toast.textContent = `Chapter ${num} untuk judul ini masih ada di antrian. Tunggu selesai atau batalkan dulu.`;
       toast.hidden = false;
+      return;
+    }
+
+    // chapter dengan nomor yang sama sudah ada di database? tolak sebelum apa pun diunggah
+    chapterSubmitBusy = true;
+    const numInput = document.getElementById('chImgNum');
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    if(submitBtn) submitBtn.disabled = true;
+    let exists = null;
+    try{ exists = await chapterExistsRemote(titleId, num); }
+    finally{ chapterSubmitBusy = false; if(submitBtn) submitBtn.disabled = false; }
+    if(exists){
+      toast.textContent = chapterExistsMessage(num, titleName);
+      toast.hidden = false;
+      numInput.focus(); numInput.select();   // form tidak dikosongkan, tinggal betulkan nomornya
       return;
     }
 
