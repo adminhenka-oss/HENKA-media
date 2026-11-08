@@ -207,7 +207,7 @@
   }
   .upd-ch:active{ opacity:0.75; }
   .upd-ch-num{ display:flex; align-items:center; font-weight:700; font-size:0.74rem; color: var(--text); white-space:nowrap; flex-shrink:0; }
-  .up-badge.on-cover{ margin-left:auto; padding:2px 6px; border-radius:5px; font-size:0.54rem; line-height:1.3; box-shadow:0 1px 5px rgba(0,0,0,0.5); }
+  .up-badge.on-cover{ margin-left:auto; padding:1px 5px; border-radius:4px; font-size:0.45rem; line-height:1.3; box-shadow:0 1px 4px rgba(0,0,0,0.5); }
   .upd-ch{ position:relative; }
   .upd-ch .up-badge{ position:absolute; top:-6px; right:10px; margin:0; box-shadow:0 0 0 2px var(--bg, #0a0a0c); }
   .upd-ch-time{ font-size:0.62rem; color: var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
@@ -1523,7 +1523,7 @@
           <div class="badge-row">
             ${flagBadge(item)}
             ${isNew ? '<span class="badge new">Baru</span>' : ''}
-            ${showUp && titleFresh(item) ? '<span class="up-badge on-cover">UP</span>' : ''}
+            ${showUp ? coverTagHTML(item) : ''}
           </div>
           ${item.cover ? '' : `<span class="cover-title">${item.t}</span>`}
         </div>
@@ -1535,6 +1535,10 @@
   // ----- urutan Update: judul dengan chapter baru (atau judul baru) muncul paling atas -----
   const activityMap = new Map();      // idJudul -> waktu chapter terbaru (ms)
   const freshMap = new Map();         // idJudul -> waktu chapter terbaru versi tampilan (updated_at || created_at), untuk tanda UP
+  // Tanda di cover: judul yang baru ditambahkan = NEW selama NEW_DAYS hari; setelah itu, kalau masih ada chapter baru = UP
+  const titleIsNew = it => !!it.createdAt && (Date.now() - it.createdAt) < NEW_DAYS * 86400000;
+  const coverTagHTML = it => titleIsNew(it) ? '<span class="up-badge on-cover">NEW</span>'
+    : (titleFresh(it) ? '<span class="up-badge on-cover">UP</span>' : '');
   const titleFresh = it => (Date.now() - (freshMap.get(String(it.supabaseId)) || 0)) < UP_DAYS * 86400000;
   let activityAt = 0;
   let activityLoading = null;
@@ -1605,7 +1609,7 @@
     return `
       <div class="card upd-card" data-title="${item.t}">
         <div class="cover" style="${coverStyle(item)}">
-          <div class="badge-row">${flagBadge(item)}</div>
+          <div class="badge-row">${flagBadge(item)}${titleIsNew(item) ? '<span class="up-badge on-cover">NEW</span>' : ''}</div>
           ${item.cover ? '' : `<span class="cover-title">${item.t}</span>`}
         </div>
         <div class="card-name"><span>${item.t}</span></div>
@@ -1911,7 +1915,8 @@
     return 0;
   }
   // Tanda "UP" pada chapter yang baru diunggah; hilang otomatis setelah UP_DAYS hari (mengikuti waktu yang tampil di daftar)
-  const UP_DAYS = 3;   // lama tanda tampil (hari)
+  const UP_DAYS = 3;   // lama tanda UP tampil (hari)
+  const NEW_DAYS = 3;  // lama tanda NEW pada judul baru (hari)
   const UP_MAX = 3;    // maksimal jumlah chapter bertanda (yang nomornya tertinggi)
   const upChapterSet = list => new Set(
     [...list].sort((a, b)=>Number(b.num) - Number(a.num)).slice(0, UP_MAX)
