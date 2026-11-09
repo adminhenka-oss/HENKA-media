@@ -320,6 +320,7 @@
   }
   .ch-num{ display:inline-block; font-variant-numeric:tabular-nums; }
   .rs-title{ display:inline-flex; align-items:center; }
+  .chapter-loading{ padding:22px 0; text-align:center; color: var(--text-faint); font-size:0.85rem; }
   .chapter-row-title{ display:flex; align-items:center; font-weight:700; font-size:0.9rem; }
   .chapter-row-date{ font-size:0.76rem; color: var(--text-faint); }
   .chapter-row.read .chapter-row-title{ color: var(--text-faint); font-weight:600; }
@@ -1905,6 +1906,9 @@
   }
 
   let currentDetailTitle = null;
+  let detailLoadToken = 0;               // mencegah daftar chapter judul lama menimpa judul yang baru dibuka
+  let detailChaptersReady = null;        // promise pemuatan chapter yang sedang berjalan
+  const chaptersCache = new Map();       // idJudul -> daftar chapter terakhir (dipakai untuk tampil instan, lalu diperbarui)
 
   // Penanda season: seasonStarts = [41, 90] -> "Season 1 End" di antara chapter 40 dan 41, "Season 2 End" di antara 89 dan 90.
   // Dihitung saat tampil, jadi data chapter tidak perlu diubah. Berlaku untuk urutan terbaru maupun terlama.
@@ -2182,10 +2186,12 @@
     toastTimer = setTimeout(()=>{ t.hidden = true; }, 5000);
   }
 
-  async function openDetail(title){
+  // opts.forReader: reader akan dibuka sesudahnya, jadi tunggu chapter dulu (tanpa menampilkan detail sekilas)
+  async function openDetail(title, opts){
     const item = findItem(title);
     if(!item) return;
     currentDetailTitle = title;
+    const token = ++detailLoadToken;
 
     const banner = document.getElementById('detailBanner');
     banner.style.cssText = item.cover
@@ -2242,29 +2248,57 @@
     document.getElementById('synopsisToggle').textContent = 'Selengkapnya ⌄';
     fitSynopsis();
 
-    currentChapters = item.supabaseId ? await buildChaptersRemote(item) : buildChapters(item);
     chapterAscending = false;
     document.getElementById('sortToggle').textContent = '↓ Terbaru';
-    renderChapterList();
-    {
+
+    function paintReadBtn(){
       const hh = item.supabaseId ? lib.h[String(item.supabaseId)] : null;
       document.getElementById('detailReadBtn').textContent =
         (hh && currentChapters.some(c=>Number(c.num) === Number(hh.read))) ? 'Lanjutkan Ch. ' + hh.read : 'Baca Sekarang';
     }
+    function finish(list){ currentChapters = list; renderChapterList(); paintReadBtn(); }
+    function showDetailView(){
+      detailOrigin = activeTab;
+      document.querySelector('main').style.display = 'none';
+      document.getElementById('riwayatView').hidden = true;
+      document.getElementById('koleksiView').hidden = true;
+      document.getElementById('seeAllView').hidden = true;
+      document.getElementById('profileView').hidden = true;
+      document.getElementById('searchView').hidden = true;
+      document.getElementById('readerView').hidden = true;
+      document.querySelector('nav.bottom').style.display = 'none';
+      document.body.classList.add('no-nav-pad');
+      const dv = document.getElementById('detailView');
+      dv.hidden = false;
+      window.scrollTo(0,0);
+    }
 
-    detailOrigin = activeTab;
-    document.querySelector('main').style.display = 'none';
-    document.getElementById('riwayatView').hidden = true;
-    document.getElementById('koleksiView').hidden = true;
-    document.getElementById('seeAllView').hidden = true;
-    document.getElementById('profileView').hidden = true;
-    document.getElementById('searchView').hidden = true;
-    document.getElementById('readerView').hidden = true;
-    document.querySelector('nav.bottom').style.display = 'none';
-    document.body.classList.add('no-nav-pad');
-    const dv = document.getElementById('detailView');
-    dv.hidden = false;
-    window.scrollTo(0,0);
+    if(!item.supabaseId){ finish(buildChapters(item)); showDetailView(); return; }
+
+    const key = String(item.supabaseId);
+    const loading = buildChaptersRemote(item);
+    detailChaptersReady = loading;
+
+    if(opts && opts.forReader){
+      const list = await loading;
+      chaptersCache.set(key, list);
+      if(token !== detailLoadToken) return;
+      finish(list); showDetailView();
+      return;
+    }
+
+    // Tampilkan detail SEKARANG (info dasar sudah terisi); daftar chapter menyusul begitu siap.
+    const cached = chaptersCache.get(key);
+    if(cached) finish(cached);
+    else {
+      currentChapters = [];
+      document.getElementById('chapterList').innerHTML = '<div class="chapter-loading">Memuat chapter…</div>';
+      paintReadBtn();
+    }
+    showDetailView();
+    const list = await loading;
+    chaptersCache.set(key, list);
+    if(token === detailLoadToken && currentDetailTitle === title) finish(list);
   }
 
   function closeDetail(){
@@ -2282,7 +2316,7 @@
     const updCh = e.target.closest('.upd-ch[data-chapter]');
     if(updCh){
       const t = updCh.dataset.title;
-      await openDetail(t);
+      await openDetail(t, { forReader:true });
       openReader(t, updCh.dataset.chapter);
       return;
     }
@@ -4424,7 +4458,8 @@
     renderChapterList();
   });
 
-  document.getElementById('detailReadBtn').addEventListener('click', ()=>{
+  document.getElementById('detailReadBtn').addEventListener('click', async ()=>{
+    if(!currentChapters.length && detailChaptersReady){ try{ await detailChaptersReady; }catch(e){} }
     if(currentChapters.length && currentDetailTitle){
       const it = findItem(currentDetailTitle);
       const h = it && it.supabaseId ? lib.h[String(it.supabaseId)] : null;
@@ -4688,7 +4723,7 @@
       switch(t.n){
         case 'reader':
           if(!(cur && cur.n === 'reader' && cur.t === t.t)){
-            if(!(cur && cur.n === 'detail' && cur.t === t.t)){ leave(); await openDetail(t.t); }
+            if(!(cur && cur.n === 'detail' && cur.t === t.t)){ leave(); await openDetail(t.t, { forReader:true }); }
           }
           await openReader(t.t, t.c);
           break;
