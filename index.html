@@ -82,6 +82,58 @@
     border: 1px solid var(--border); cursor:pointer;
   }
 
+  /* lonceng notifikasi */
+  .bell-btn{
+    position:relative; width:36px; height:36px; border-radius:50%; padding:0;
+    background: var(--bg-panel); border:1px solid var(--border);
+    display:flex; align-items:center; justify-content:center;
+    color: var(--text-muted); cursor:pointer;
+  }
+  .bell-btn svg{ width:19px; height:19px; }
+  .bell-badge{
+    position:absolute; top:-7px; right:-7px; min-width:20px; height:20px; padding:0 5px; box-sizing:border-box;
+    border-radius:999px; background:#ff2d3d; color:#fff; font-size:0.66rem; font-weight:800; line-height:20px;
+    text-align:center; box-shadow:0 0 0 2px var(--bg); pointer-events:none;
+  }
+  .bell-badge[hidden]{ display:none; }
+
+  /* halaman notifikasi */
+  .notif-view{ background: var(--bg); min-height:100vh; padding-bottom:30px; }
+  .notif-top{ display:flex; align-items:center; gap:10px; padding:20px 20px 14px; border-bottom:1px solid var(--border); }
+  .notif-top h1{ margin:0; font-size:1.35rem; font-weight:800; }
+  .notif-count{
+    min-width:26px; height:26px; padding:0 8px; box-sizing:border-box; border-radius:999px;
+    background:#ff2d3d; color:#fff; font-size:0.78rem; font-weight:800; line-height:26px; text-align:center;
+  }
+  .notif-count[hidden]{ display:none; }
+  .notif-markall{
+    margin-left:auto; display:flex; align-items:center; gap:6px; background:none; border:none; padding:6px 0;
+    color: var(--text-muted); font:inherit; font-size:0.85rem; cursor:pointer; white-space:nowrap;
+  }
+  .notif-markall svg{ width:19px; height:19px; }
+  .notif-markall:disabled{ opacity:0.4; cursor:default; }
+  .notif-sec{ margin:0; padding:18px 20px 10px; font-size:1.05rem; font-weight:800; border-top:1px solid var(--border); }
+  .notif-sec:first-child{ border-top:none; }
+  .notif-item{
+    display:flex; gap:14px; width:100%; text-align:left; padding:14px 20px; box-sizing:border-box;
+    background:none; border:none; border-top:1px solid var(--border); color:inherit; font:inherit; cursor:pointer;
+  }
+  .notif-thumb{
+    flex:none; width:58px; height:58px; border-radius:12px; overflow:hidden; background: var(--bg-panel);
+    display:flex; align-items:center; justify-content:center; font-weight:800; color: var(--text-muted);
+  }
+  .notif-thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .notif-body{ flex:1; min-width:0; }
+  .notif-head{ display:flex; align-items:center; gap:8px; font-size:0.92rem; font-weight:700; }
+  .notif-dot{ flex:none; width:9px; height:9px; border-radius:50%; background:#ff2d3d; }
+  .notif-item.read .notif-dot{ visibility:hidden; }
+  .notif-item.read .notif-head{ color: var(--text-muted); font-weight:600; }
+  .notif-when{ margin-left:auto; flex:none; font-size:0.78rem; font-weight:500; color: var(--text-muted); }
+  .notif-name{ margin:4px 0 2px; font-size:0.9rem; line-height:1.35; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+  .notif-desc{ font-size:0.8rem; color: var(--text-muted); }
+  .notif-empty{ padding:60px 28px; text-align:center; color: var(--text-muted); font-size:0.9rem; line-height:1.5; }
+  .notif-empty b{ display:block; margin-bottom:6px; color: var(--text); font-size:1rem; }
+
   main{ padding: 6px 20px 0; }
 
   .search-row{ display:flex; gap:10px; margin: 14px 0 22px; }
@@ -940,6 +992,10 @@
     <span class="logo-text brand-font">HENKA</span>
   </div>
   <div class="header-actions">
+    <button class="bell-btn" id="bellBtn" type="button" aria-label="Notifikasi">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+      <span class="bell-badge" id="bellBadge" hidden></span>
+    </button>
     <button class="theme-toggle" id="themeToggle" aria-label="Ganti tema">☾</button>
     <div class="avatar" id="headerAvatar"></div>
   </div>
@@ -1058,6 +1114,19 @@
     <h1 id="seeAllTitle"></h1>
   </div>
   <div class="seeall-wrap" id="seeAllWrap"></div>
+</div>
+
+<div class="notif-view" id="notifView" hidden>
+  <div class="notif-top">
+    <button class="circle-btn" id="notifBack" type="button" aria-label="Kembali"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+    <h1>Notifikasi</h1>
+    <span class="notif-count" id="notifCount" hidden></span>
+    <button class="notif-markall" id="notifMarkAll" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M8 12.5l3 3 5-6"/></svg>
+      Tandai dibaca
+    </button>
+  </div>
+  <div id="notifList"></div>
 </div>
 
 <div class="koleksi-view" id="koleksiView" hidden>
@@ -1996,6 +2065,7 @@
     const id = String(it.supabaseId);
     if(on) lib.b[id] = true; else delete lib.b[id];
     libSaveCache();
+    scheduleNotifRefresh();
     if(!currentUser) return;
     if(on) libRun(sb.from('bookmarks').upsert({ user_id: currentUser.id, title_id: id }, { onConflict: 'user_id,title_id' }), 'simpan koleksi');
     else libRun(sb.from('bookmarks').delete().eq('user_id', currentUser.id).eq('title_id', id), 'hapus koleksi');
@@ -2158,6 +2228,7 @@
     if(libUserId === uid) return false;
     libUserId = uid;
     await loadLibrary();
+    loadNotifs(true).then(changed=>{ if(changed && !document.getElementById('notifView').hidden) renderNotif(); });
     return true;
   }
 
@@ -2309,6 +2380,7 @@
     else if(detailOrigin === 'koleksi'){ showKoleksi(); }
     else if(detailOrigin === 'seeall' && seeAllState){ showSeeAll(seeAllState.kind, seeAllState.genre); }
     else if(detailOrigin === 'profile'){ showProfile(); }
+    else if(detailOrigin === 'notif'){ showNotif(); }
     else { showHome(); }
   }
 
@@ -2373,6 +2445,7 @@
     document.getElementById('riwayatView').hidden = true;
     document.getElementById('koleksiView').hidden = true;
     document.getElementById('seeAllView').hidden = true;
+    document.getElementById('notifView').hidden = true;
     document.getElementById('profileView').hidden = true;
     document.getElementById('searchView').hidden = true;
     document.getElementById('adminView').hidden = true;
@@ -4367,6 +4440,7 @@
     if(activeTab === 'riwayat'){ showRiwayat(); }
     else if(activeTab === 'koleksi'){ showKoleksi(); }
     else if(activeTab === 'profile'){ showProfile(); }
+    else if(activeTab === 'notif'){ showNotif(); }
     else { showHome(); }
   }
 
@@ -4646,6 +4720,213 @@
   // Layar-layar lama tidak diubah. Router ini mengamati layar mana yang sedang tampil, lalu
   // menyelaraskannya dengan riwayat browser (pushState). Saat tombol Kembali ditekan (popstate),
   // layar dikembalikan ke entri sebelumnya, dan baru keluar situs kalau sudah di Beranda.
+  // ===== Notifikasi =====
+  // Dibentuk dari data yang sudah ada: seri baru + chapter baru dari judul di Koleksi (14 hari terakhir).
+  // Status dibaca disimpan di perangkat ini, terpisah per akun.
+  const NOTIF_DAYS = 14;
+  const notifState = { list:[], at:0, loading:null, timer:null };
+  const BULAN = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+  const nEsc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  function notifKey(){ return 'henka_notif_v1_' + (currentUser ? currentUser.id : 'guest'); }
+  function notifReadGet(){
+    try{ const o = JSON.parse(localStorage.getItem(notifKey()) || '{}'); return { all: o.all || 0, ids: o.ids || {} }; }
+    catch(e){ return { all:0, ids:{} }; }
+  }
+  function notifReadSave(o){
+    const cut = Date.now() - 45 * 86400000;
+    Object.keys(o.ids).forEach(k=>{ if(o.ids[k] < cut) delete o.ids[k]; });
+    try{ localStorage.setItem(notifKey(), JSON.stringify(o)); }catch(e){}
+  }
+  // ---- sinkron antar perangkat (tabel notif_reads, lewat notifikasi-sinkron.sql) ----
+  let notifSyncOff = false, notifPushTimer = null;
+  function notifMerge(a, b){
+    const ids = Object.assign({}, a.ids);
+    Object.keys(b.ids).forEach(k=>{ if(!ids[k] || b.ids[k] > ids[k]) ids[k] = b.ids[k]; });
+    return { all: Math.max(a.all, b.all), ids };
+  }
+  // ambil status dibaca dari akun dan gabungkan ke perangkat ini; true kalau ada yang berubah
+  async function notifPull(){
+    if(!currentUser || notifSyncOff) return false;
+    try{
+      const { data, error } = await sb.from('notif_reads').select('read_all_at, read_ids').eq('user_id', currentUser.id).maybeSingle();
+      if(error){ notifSyncOff = true; return false; }          // tabel belum dibuat: tetap jalan, hanya di perangkat ini
+      if(!data) return false;
+      const remote = { all: Date.parse(data.read_all_at) || 0, ids: (data.read_ids && typeof data.read_ids === 'object') ? data.read_ids : {} };
+      const local = notifReadGet(), m = notifMerge(local, remote);
+      if(m.all === local.all && Object.keys(m.ids).length === Object.keys(local.ids).length) return false;
+      notifReadSave(m);
+      return true;
+    }catch(e){ return false; }
+  }
+  // kirim status dibaca ke akun (digabung dulu dengan yang ada di server supaya tidak saling menimpa)
+  function notifPushSoon(){
+    if(!currentUser || notifSyncOff) return;
+    clearTimeout(notifPushTimer);
+    notifPushTimer = setTimeout(async()=>{
+      try{
+        await notifPull();
+        const r = notifReadGet();
+        const { error } = await sb.from('notif_reads').upsert(
+          { user_id: currentUser.id, read_all_at: new Date(r.all || 0).toISOString(), read_ids: r.ids, updated_at: new Date().toISOString() },
+          { onConflict: 'user_id' });
+        if(error) console.warn('Sinkron notifikasi gagal:', error.message);
+      }catch(e){ console.warn('Sinkron notifikasi gagal:', e); }
+    }, 400);
+  }
+  const notifIsUnread = (n, r) => n.at > r.all && !r.ids[n.id];
+  const notifUnreadCount = () => { const r = notifReadGet(); return notifState.list.filter(n=>notifIsUnread(n, r)).length; };
+  const titleById = id => allTitles().find(x=>String(x.supabaseId) === String(id));
+
+  function paintBell(){
+    const b = document.getElementById('bellBadge');
+    if(!b) return;
+    const n = notifUnreadCount();
+    b.hidden = !n;
+    b.textContent = n > 99 ? '99+' : String(n);
+  }
+
+  function scheduleNotifRefresh(){
+    clearTimeout(notifState.timer);
+    notifState.timer = setTimeout(()=>{
+      loadNotifs(true).then(changed=>{ if(changed && !document.getElementById('notifView').hidden) renderNotif(); });
+    }, 500);
+  }
+
+  // true kalau daftarnya berubah
+  function loadNotifs(force){
+    if(!force && Date.now() - notifState.at < 60000) return Promise.resolve(false);
+    if(notifState.loading) return notifState.loading;
+    notifState.loading = (async()=>{
+      try{
+        const pulled = await notifPull();
+        const since = Date.now() - NOTIF_DAYS * 86400000;
+        const list = [];
+        const newSeries = new Map();
+        allTitles().forEach(it=>{
+          if(it.createdAt && it.createdAt >= since){
+            list.push({ id:'s:' + (it.supabaseId || it.t), type:'series', at:it.createdAt, tid:String(it.supabaseId || ''), t:it.t });
+            newSeries.set(String(it.supabaseId), it.createdAt);
+          }
+        });
+        const ids = Object.keys(lib.b);
+        if(ids.length){
+          const { data, error } = await sb.from('chapters').select('title_id, chapter_num, created_at')
+            .in('title_id', ids).gt('created_at', new Date(since).toISOString())
+            .order('created_at', { ascending:false }).limit(500);
+          if(!error && data){
+            const groups = new Map();     // satu notifikasi per judul per hari
+            data.forEach(r=>{
+              const t = Date.parse(r.created_at) || 0, d = new Date(t);
+              const k = r.title_id + '|' + d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate();
+              const g = groups.get(k) || { tid:String(r.title_id), nums:[], at:0 };
+              g.nums.push(Number(r.chapter_num)); if(t > g.at) g.at = t;
+              groups.set(k, g);
+            });
+            groups.forEach((g, k)=>{
+              const it = titleById(g.tid);
+              if(!it) return;
+              const born = newSeries.get(g.tid);
+              if(born && g.at - born < 6 * 3600000) return;      // chapter awal seri baru sudah tercakup "Seri baru"
+              g.nums.sort((a,b)=>a-b);
+              list.push({ id:'c:' + k + ':' + g.nums[g.nums.length-1], type:'chapter', at:g.at, tid:g.tid, t:it.t, nums:g.nums });
+            });
+          }
+        }
+        list.sort((a,b)=>b.at - a.at);
+        const changed = pulled || list.length !== notifState.list.length || list.some((n,i)=>n.id !== notifState.list[i].id);
+        notifState.list = list; notifState.at = Date.now();
+        paintBell();
+        return changed;
+      }catch(e){ return false; }
+      finally{ notifState.loading = null; }
+    })();
+    return notifState.loading;
+  }
+
+  function notifWhen(at){
+    const d = new Date(at), n = new Date();
+    if(d.toDateString() === n.toDateString()) return d.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' }).replace(':', '.');
+    return d.getDate() + ' ' + BULAN[d.getMonth()];
+  }
+  function notifRange(nums){
+    const f = String;
+    if(nums.length === 1) return 'Chapter ' + f(nums[0]) + ' sudah tersedia untuk dibaca';
+    return 'Chapter ' + f(nums[0]) + '–' + f(nums[nums.length-1]) + ' sudah tersedia untuk dibaca';
+  }
+
+  function renderNotif(){
+    const r = notifReadGet(), list = notifState.list;
+    const unread = list.filter(n=>notifIsUnread(n, r)).length;
+    const cnt = document.getElementById('notifCount');
+    cnt.hidden = !unread; cnt.textContent = unread > 99 ? '99+' : String(unread);
+    document.getElementById('notifMarkAll').disabled = !unread;
+    const box = document.getElementById('notifList');
+    if(!list.length){
+      box.innerHTML = '<div class="notif-empty"><b>Belum ada notifikasi</b>Seri baru dan chapter baru dari judul di Koleksi kamu akan muncul di sini.</div>';
+      return;
+    }
+    const today = new Date().toDateString(), weekAgo = Date.now() - 7 * 86400000;
+    const secs = [['Hari ini', []], ['Minggu ini', []], ['Sebelumnya', []]];
+    list.forEach(n=>{
+      if(new Date(n.at).toDateString() === today) secs[0][1].push(n);
+      else if(n.at >= weekAgo) secs[1][1].push(n);
+      else secs[2][1].push(n);
+    });
+    box.innerHTML = secs.filter(x=>x[1].length).map(([label, arr])=>
+      '<h2 class="notif-sec">' + label + '</h2>' + arr.map(n=>{
+        const it = titleById(n.tid) || null;
+        const head = n.type === 'series' ? 'Seri baru ditambahkan' : 'Chapter baru';
+        const desc = n.type === 'series' ? 'Seri baru sudah tersedia untuk dibaca' : notifRange(n.nums);
+        const thumb = it && it.cover ? '<img src="' + nEsc(it.cover) + '" alt="" loading="lazy">' : nEsc((n.t || '?').charAt(0).toUpperCase());
+        return '<button type="button" class="notif-item' + (notifIsUnread(n, r) ? '' : ' read') + '" data-nid="' + nEsc(n.id) + '" data-tid="' + nEsc(n.tid) + '">' +
+          '<span class="notif-thumb">' + thumb + '</span>' +
+          '<span class="notif-body">' +
+            '<span class="notif-head"><i class="notif-dot"></i>' + head + '<span class="notif-when">' + notifWhen(n.at) + '</span></span>' +
+            '<span class="notif-name" style="display:-webkit-box">' + nEsc(n.t) + '</span>' +
+            '<span class="notif-desc">' + desc + '</span>' +
+          '</span></button>';
+      }).join('')
+    ).join('');
+  }
+
+  function showNotif(){
+    renderNotif();
+    loadNotifs(true).then(changed=>{ if(changed && !document.getElementById('notifView').hidden) renderNotif(); });
+    hideAllTabs();
+    document.getElementById('notifView').hidden = false;
+    activeTab = 'notif';
+    setActiveNav('navHome');
+    window.scrollTo(0,0);
+  }
+
+  document.getElementById('bellBtn').addEventListener('click', showNotif);
+  document.getElementById('notifBack').addEventListener('click', showHome);
+  document.getElementById('notifMarkAll').addEventListener('click', ()=>{
+    const r = notifReadGet();
+    const latest = notifState.list.reduce((m, n)=>Math.max(m, n.at), 0);
+    r.all = Math.max(Date.now(), latest);
+    notifReadSave(r);
+    notifPushSoon();
+    renderNotif(); paintBell();
+  });
+  document.getElementById('notifList').addEventListener('click', e=>{
+    const row = e.target.closest('.notif-item');
+    if(!row) return;
+    const r = notifReadGet();
+    r.ids[row.dataset.nid] = Date.now();
+    notifReadSave(r);
+    notifPushSoon();
+    paintBell();
+    const it = titleById(row.dataset.tid);
+    if(it) openDetail(it.t); else renderNotif();
+  });
+  // kembali ke tab/aplikasi: periksa notifikasi lagi (paling sering tiap 60 detik)
+  document.addEventListener('visibilitychange', ()=>{
+    if(document.visibilityState !== 'visible' || !titlesLoaded) return;
+    loadNotifs().then(changed=>{ if(changed && !document.getElementById('notifView').hidden) renderNotif(); });
+  });
+
   const Nav = (function(){
     const $ = id => document.getElementById(id);
     const HOME = { n:'home' };
@@ -4666,6 +4947,7 @@
         case 'detail':  return base + '#/judul/' + encodeURIComponent(titleKey(r.t));
         case 'reader':  return base + '#/baca/' + encodeURIComponent(titleKey(r.t)) + '/' + r.c;
         case 'riwayat': case 'koleksi': case 'profil': case 'admin': return base + '#/' + r.n;
+        case 'notif':   return base + '#/notifikasi';
         case 'search':  return base + '#/cari';
         case 'seeall':  return base + '#/semua/' + r.k + '/' + encodeURIComponent(r.g);
         default:        return base;
@@ -4679,6 +4961,7 @@
       if(p[0] === 'baca' && p[1] && p[2]){ const it = itemByKey(p[1]); return it ? { n:'reader', t:it.t, c:Number(p[2]) } : null; }
       if(TABS.indexOf(p[0]) > -1) return { n:p[0] };
       if(p[0] === 'admin') return { n:'admin' };
+      if(p[0] === 'notifikasi') return { n:'notif' };
       if(p[0] === 'cari') return { n:'search' };
       if(p[0] === 'semua' && p[1] && p[2]) return { n:'seeall', k:p[1], g:p[2] };
       return null;
@@ -4694,6 +4977,7 @@
       else if(vis('searchView'))   r = { n:'search' };
       else if(vis('adminView'))    r = { n:'admin' };
       else if(vis('seeAllView'))   r = seeAllState ? { n:'seeall', k:seeAllState.kind, g:seeAllState.genre } : null;
+      else if(vis('notifView'))    r = { n:'notif' };
       else if(vis('riwayatView'))  r = { n:'riwayat' };
       else if(vis('koleksiView'))  r = { n:'koleksi' };
       else if(vis('profileView'))  r = { n:'profil' };
@@ -4734,6 +5018,7 @@
         case 'detail':  leave(); await openDetail(t.t); break;
         case 'riwayat': leave(); showRiwayat(); break;
         case 'koleksi': leave(); showKoleksi(); break;
+        case 'notif':   leave(); showNotif(); break;
         case 'profil':  leave(); showProfile(); break;
         case 'seeall':  leave(); showSeeAll(t.k, t.g); break;
         case 'search':  leave(); openSearchOverlay(); break;
@@ -4832,7 +5117,7 @@
       }
       window.addEventListener('popstate', onPop);
       const mo = new MutationObserver(schedule);
-      ['readerView','detailView','searchView','adminView','seeAllView','riwayatView','koleksiView','profileView','readerSheet','appSheet']
+      ['readerView','detailView','searchView','adminView','seeAllView','notifView','riwayatView','koleksiView','profileView','readerSheet','appSheet']
         .forEach(id=>mo.observe($(id), { attributes:true, attributeFilter:['hidden'] }));
       mo.observe(document.querySelector('main'), { attributes:true, attributeFilter:['style'] });
       ['readerChapterLabel','detailTitle'].forEach(id=>mo.observe($(id), { childList:true, characterData:true, subtree:true }));
@@ -4847,6 +5132,7 @@
     await loadCustomTitles();
     titlesLoaded = true;
     await ensureLibrary();
+    loadNotifs(true);
     await loadActivity(true);
     selectGenre('Manhwa');
     renderFeatured();
