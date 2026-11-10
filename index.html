@@ -2360,7 +2360,7 @@
       wrap.innerHTML = `<div class="koleksi-empty">Belum ada koleksi tersimpan.<br>Tekan tombol Bookmarks di halaman detail judul untuk menambahkannya di sini.</div>`;
       return;
     }
-    wrap.innerHTML = `<div class="grid">${saved.map(it=>cardHTML(it,false)).join('')}</div>`;
+    wrap.innerHTML = `<div class="grid">${saved.map(it=>cardHTML(it, false, true)).join('')}</div>`;   // true = tanda NEW/UP
   }
 
   function setActiveNav(id){
@@ -2429,6 +2429,10 @@
   function showKoleksi(){
     koleksiSel.exit();
     renderKoleksi();
+    // data tanda NEW/UP baru siap setelah aktivitas dimuat; segarkan kalau berubah (dan sedang tidak memilih kartu)
+    loadActivity().then(changed=>{
+      if(changed && !document.getElementById('koleksiView').hidden && !koleksiSel.active) renderKoleksi();
+    });
     hideAllTabs();
     document.getElementById('koleksiView').hidden = false;
     activeTab = 'koleksi';
