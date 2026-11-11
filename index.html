@@ -386,6 +386,37 @@
   }
   .riwayat-header h1{ font-size:1.5rem; font-weight:800; margin:0 0 6px; }
   .riwayat-header p{ margin:0; color: var(--text-muted); font-size:0.85rem; }
+  .riwayat-tabs{
+    display:flex; gap:4px; max-width:300px; margin:16px auto 0; padding:4px;
+    background: var(--bg-panel); border:1px solid var(--border); border-radius:999px;
+  }
+  .rt-btn{
+    flex:1; border:none; background:none; color: var(--text-muted); font:inherit; font-weight:700;
+    font-size:0.88rem; padding:9px 0; border-radius:999px; cursor:pointer;
+  }
+  .rt-btn.on{ background: var(--accent); color:#fff; }
+  .chist-card{
+    display:flex; gap:14px; background: var(--bg-panel); border:1px solid var(--border);
+    border-radius:14px; padding:14px; margin-bottom:20px; cursor:pointer;
+  }
+  .chist-card .history-cover{ width:48px; height:66px; }
+  .chist-text{
+    font-size:0.9rem; line-height:1.4; margin:2px 0 10px; word-break:break-word;
+    display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden;
+  }
+  .chist-meta{ display:flex; align-items:center; gap:14px; font-size:0.78rem; color: var(--text-faint); }
+  .chist-del{
+    margin-left:auto; background:none; border:none; padding:2px 0; font:inherit; font-size:0.78rem;
+    font-weight:700; color:#ff5d6c; cursor:pointer;
+  }
+  .chist-more{
+    display:block; margin:0 auto 24px; padding:10px 22px; border-radius:999px; background: var(--bg-panel);
+    border:1px solid var(--border); color: var(--text); font:inherit; font-weight:700; font-size:0.85rem; cursor:pointer;
+  }
+  .chist-login{
+    display:inline-block; margin-top:14px; padding:10px 20px; border:none; border-radius:999px;
+    background: var(--accent); color:#fff; font:inherit; font-weight:700; cursor:pointer;
+  }
   .history-wrap{ padding: 22px 20px 10px; }
   .history-group{ position:relative; padding-left:2px; margin-bottom:4px; }
   .history-group::before{
@@ -1096,10 +1127,15 @@
 
 <div class="riwayat-view" id="riwayatView" hidden>
   <div class="riwayat-header">
-    <h1>Riwayat Baca</h1>
-    <p>Tap tahan untuk memilih & hapus</p>
+    <h1 id="riwayatTitle">Riwayat Baca</h1>
+    <p id="riwayatSub">Tap tahan untuk memilih & hapus</p>
+    <div class="riwayat-tabs" id="riwayatTabs">
+      <button type="button" class="rt-btn on" data-rtab="baca">Baca</button>
+      <button type="button" class="rt-btn" data-rtab="komentar">Komentar</button>
+    </div>
   </div>
   <div class="history-wrap" id="historyWrap"></div>
+  <div class="history-wrap" id="commentHistoryWrap" hidden></div>
   <div class="history-bar" id="historyBar" hidden>
     <span id="historyBarCount"></span>
     <button type="button" id="historyBarAll">Pilih semua</button>
@@ -2492,6 +2528,7 @@
   function showRiwayat(){
     historySel.exit();
     renderHistory();
+    setRiwayatTab(riwayatTab);
     hideAllTabs();
     document.getElementById('riwayatView').hidden = false;
     activeTab = 'riwayat';
@@ -4618,6 +4655,123 @@
     selectors.push(sel);
     return sel;
   }
+
+  // ===== Riwayat komentar =====
+  let riwayatTab = 'baca';
+  const chist = { items:[], hasMore:false, loading:false, uid:null, error:false, unavailable:false };
+  const CHIST_PAGE = 30;
+  const CHIST_COLS = 'id, title_id, chapter_num, parent_id, body, like_count, reply_count, created_at';
+
+  function setRiwayatTab(tab){
+    riwayatTab = tab === 'komentar' ? 'komentar' : 'baca';
+    const k = riwayatTab === 'komentar';
+    document.querySelectorAll('#riwayatTabs .rt-btn').forEach(b=>b.classList.toggle('on', b.dataset.rtab === riwayatTab));
+    document.getElementById('riwayatTitle').textContent = k ? 'Riwayat Komentar' : 'Riwayat Baca';
+    document.getElementById('riwayatSub').textContent = k ? 'Komentar yang pernah kamu tulis' : 'Tap tahan untuk memilih & hapus';
+    document.getElementById('historyWrap').hidden = k;
+    document.getElementById('commentHistoryWrap').hidden = !k;
+    if(k){
+      historySel.exit();
+      document.getElementById('historyBar').hidden = true;
+      renderCommentHistory();
+      loadCommentHistory(true);
+    }
+  }
+
+  async function loadCommentHistory(reset){
+    if(!currentUser){ chist.items = []; chist.uid = null; renderCommentHistory(); return; }
+    if(chist.loading) return;
+    chist.loading = true;
+    try{
+      if(chist.uid !== currentUser.id){ chist.items = []; chist.uid = currentUser.id; }
+      const from = reset ? 0 : chist.items.length;
+      const { data, error } = await sb.from('comments').select(CHIST_COLS)
+        .eq('user_id', currentUser.id).order('created_at', { ascending:false }).range(from, from + CHIST_PAGE - 1);
+      if(error) throw error;
+      const rows = data || [];
+      chist.items = reset ? rows : chist.items.concat(rows);
+      chist.hasMore = rows.length === CHIST_PAGE;
+      chist.error = false; chist.unavailable = false;
+    }catch(err){
+      if(cmIsMissing(err)) chist.unavailable = true; else chist.error = true;
+    }finally{
+      chist.loading = false;
+    }
+    if(riwayatTab === 'komentar' && !document.getElementById('riwayatView').hidden) renderCommentHistory();
+  }
+
+  function renderCommentHistory(){
+    const wrap = document.getElementById('commentHistoryWrap');
+    if(!currentUser){
+      wrap.innerHTML = '<div class="koleksi-empty">Masuk dulu untuk melihat riwayat komentarmu.<br><button type="button" class="chist-login" id="chistLogin">Masuk dengan Google</button></div>';
+      return;
+    }
+    if(chist.unavailable){
+      wrap.innerHTML = '<div class="koleksi-empty">Komentar belum tersedia.</div>';
+      return;
+    }
+    const list = chist.items.filter(c=>titleById(c.title_id));
+    if(!list.length){
+      wrap.innerHTML = chist.loading && !chist.items.length
+        ? '<div class="koleksi-empty">Memuat komentar…</div>'
+        : chist.error
+          ? '<div class="koleksi-empty">Gagal memuat komentar.<br>Coba buka tab ini lagi.</div>'
+          : '<div class="koleksi-empty">Belum ada komentar.<br>Komentar yang kamu tulis di chapter akan muncul di sini.</div>';
+      return;
+    }
+    const groups = [];
+    list.forEach(c=>{
+      const t = Date.parse(c.created_at) || 0, label = historyDateLabel(t);
+      let g = groups.find(x=>x.date === label);
+      if(!g){ g = { date:label, items:[] }; groups.push(g); }
+      g.items.push({ c, t });
+    });
+    wrap.innerHTML = groups.map(g=>{
+      const cards = g.items.map(({c, t})=>{
+        const item = titleById(c.title_id);
+        const reply = c.parent_id ? ' · Balasan' : '';
+        return '<div class="chist-card" data-cid="' + cmEsc(c.id) + '" data-tid="' + cmEsc(c.title_id) + '" data-ch="' + cmEsc(c.chapter_num) + '">' +
+          '<div class="history-cover" style="' + coverStyle(item) + '"></div>' +
+          '<div class="history-info">' +
+            '<div class="history-top"><span class="history-title">' + cmEsc(item.t) + '</span><span class="history-time">' + historyTimeLabel(t) + '</span></div>' +
+            '<div class="history-chapter">Chapter ' + cmEsc(c.chapter_num) + reply + '</div>' +
+            '<div class="chist-text">' + cmEsc(c.body) + '</div>' +
+            '<div class="chist-meta"><span>♥ ' + (c.like_count || 0) + '</span>' +
+              (c.reply_count > 0 ? '<span>' + c.reply_count + ' balasan</span>' : '') +
+              '<button type="button" class="chist-del" data-del="' + cmEsc(c.id) + '">Hapus</button></div>' +
+          '</div></div>';
+      }).join('');
+      return '<div class="history-group"><span class="date-pill">' + g.date + '</span>' + cards + '</div>';
+    }).join('') + (chist.hasMore ? '<button type="button" class="chist-more" id="chistMore">Muat lebih banyak</button>' : '');
+  }
+
+  document.getElementById('riwayatTabs').addEventListener('click', e=>{
+    const b = e.target.closest('.rt-btn');
+    if(b) setRiwayatTab(b.dataset.rtab);
+  });
+  document.getElementById('commentHistoryWrap').addEventListener('click', async e=>{
+    if(e.target.closest('#chistLogin')){ signInWithGoogle(); return; }
+    if(e.target.closest('#chistMore')){ await loadCommentHistory(false); return; }
+    const del = e.target.closest('.chist-del');
+    if(del){
+      const id = del.dataset.del;
+      const c = chist.items.find(x=>String(x.id) === String(id));
+      if(!c) return;
+      const extra = c.reply_count > 0 ? '\n\nBalasan di bawahnya juga ikut terhapus.' : '';
+      if(!confirm('Hapus komentar ini?' + extra)) return;
+      const { error } = await sb.from('comments').delete().eq('id', c.id);
+      if(error){ showLoginToast('Gagal menghapus komentar.'); return; }
+      chist.items = chist.items.filter(x=>String(x.id) !== String(id));
+      renderCommentHistory();
+      return;
+    }
+    const card = e.target.closest('.chist-card');
+    if(!card) return;
+    const it = titleById(card.dataset.tid);
+    if(!it) return;
+    await openDetail(it.t);
+    openReader(it.t, card.dataset.ch);
+  });
 
   function renderHistory(){
     const list = loadHistory().filter(h=>findItem(h.title));
