@@ -303,7 +303,10 @@
     display:flex; align-items:center; gap:8px; margin-bottom:8px;
     font-weight:700; font-size:0.88rem; color: var(--accent);
   }
-  .status-dot{ width:8px; height:8px; border-radius:50%; background: var(--accent); flex-shrink:0; }
+  .status-dot{ width:8px; height:8px; border-radius:50%; background: currentColor; flex-shrink:0; }
+  .status-line.st-ongoing{ color:#22c55e; }      /* Ongoing: hijau */
+  .status-line.st-hiatus{ color:#f59e0b; }       /* Hiatus: oranye */
+  .status-line.st-completed{ color:#ef4444; }    /* Completed: merah */
   .meta-sep{ color: var(--text-faint); font-weight:400; }
   .rating-inline{ color: var(--ember); font-weight:800; }
   .detail-title{ font-size:1.55rem; font-weight:800; line-height:1.25; margin:0 0 18px; }
@@ -1098,7 +1101,7 @@
   <div class="detail-body">
     <div class="status-line">
       <span class="status-dot"></span>
-      <span id="detailStatus">Masih berlanjut</span>
+      <span id="detailStatus">Ongoing</span>
       <span class="meta-sep">•</span>
       <span class="rating-inline" id="detailChips"></span>
     </div>
@@ -2314,8 +2317,12 @@
       poster.removeAttribute('src');
       poster.hidden = true;
     }
+    const stKey = item.status === 'Ongoing' ? 'ongoing' : item.status === 'Hiatus' ? 'hiatus' : 'completed';
     document.getElementById('detailStatus').textContent =
-      item.status === 'Ongoing' ? 'Masih berlanjut' : item.status === 'Hiatus' ? 'Hiatus' : 'Tamat';
+      stKey === 'ongoing' ? 'Ongoing' : stKey === 'hiatus' ? 'Hiatus' : 'Completed';
+    const stLine = document.querySelector('.status-line');
+    stLine.classList.remove('st-ongoing', 'st-hiatus', 'st-completed');
+    stLine.classList.add('st-' + stKey);
     document.getElementById('detailTitle').textContent = item.t;
 
     document.getElementById('detailChips').textContent = '★ ' + item.rating;
