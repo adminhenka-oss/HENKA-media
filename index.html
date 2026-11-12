@@ -2816,12 +2816,13 @@
   const adminOpenIds = new Set();
 
   function adminFiltered(){
-    const q = (document.getElementById('adminSearch').value || '').trim().toLowerCase();
+    const q = (document.getElementById('adminSearch').value || '').trim();
+    const match = makeMatcher(q);
     let all = [];
     Object.keys(titles).forEach(cat=>titles[cat].forEach(it=>{ if(it.isCustom) all.push({ cat, it }); }));
     const total = all.length;
     if(adminState.cat !== 'all') all = all.filter(x=>x.cat === adminState.cat);
-    if(q) all = all.filter(x=>x.it.t.toLowerCase().includes(q) || (x.it.author || '').toLowerCase().includes(q));
+    if(q) all = all.filter(x=>match(x.it.t) || match(x.it.author || ''));
     if(adminState.sort === 'az') all.sort((a,b)=>a.it.t.localeCompare(b.it.t));
     else if(adminState.sort === 'za') all.sort((a,b)=>b.it.t.localeCompare(a.it.t));
     else all.sort((a,b)=>((b.it.createdAt || 0) - (a.it.createdAt || 0)) || (b.it.seq - a.it.seq));
@@ -2982,13 +2983,14 @@
   function populateAdminTitleSelect(){
     const dbTitles = allTitles().filter(it=>it.supabaseId).sort((a,b)=>a.t.localeCompare(b.t));
     const select = document.getElementById('chImgTitle');
-    const q = (document.getElementById('chImgTitleSearch').value || '').trim().toLowerCase();
+    const q = (document.getElementById('chImgTitleSearch').value || '').trim();
+    const match = makeMatcher(q);
     const prev = select.value;
     if(dbTitles.length === 0){
       select.innerHTML = `<option value="">Belum ada judul di database — tambah lewat "Tambah Judul" dulu</option>`;
       return;
     }
-    const list = q ? dbTitles.filter(it=>it.t.toLowerCase().includes(q)) : dbTitles;
+    const list = q ? dbTitles.filter(it=>match(it.t)) : dbTitles;
     if(list.length === 0){
       select.innerHTML = `<option value="">Tidak ada judul yang cocok</option>`;
       return;
@@ -3005,9 +3007,10 @@
   const chapterLoading = new Set();
 
   function chapterTitleList(){
-    const q = (document.getElementById('chapterSearch').value || '').trim().toLowerCase();
+    const q = (document.getElementById('chapterSearch').value || '').trim();
+    const match = makeMatcher(q);
     const all = allTitles().filter(it=>it.supabaseId).sort((a,b)=>a.t.localeCompare(b.t));
-    return { all: q ? all.filter(it=>it.t.toLowerCase().includes(q)) : all, total: all.length };
+    return { all: q ? all.filter(it=>match(it.t)) : all, total: all.length };
   }
 
   async function renderChapterImageList(){
@@ -4320,6 +4323,28 @@
   let selectedFormat  = new Set();      // format/kategori (salah satu cocok)
   const hasActiveFilters = ()=> selectedFilters.size + selectedStatus.size + selectedFormat.size > 0;
   const norm = v => String(v || '').trim().toLowerCase();
+
+  // ===== Pencarian yang toleran =====
+  // Huruf kecil, tanpa aksen, apostrof (' ’ ‘ `) dibuang, tanda baca lain (- : ! dst.) dianggap spasi.
+  // Jadi "Extra’s", "Extra's", "Extras", dan "Extra s" saling cocok.
+  function sKey(v){
+    return String(v == null ? '' : v).normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+      .replace(/['’‘`´ʼ]/g, '')
+      .replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+  }
+  // Mengembalikan fungsi cocok(teks). Cocok kalau frasa ada di teks, atau cocok tanpa spasi sama sekali,
+  // atau semua kata (minimal 2 huruf) ada di teks dalam urutan bebas.
+  function makeMatcher(query){
+    const q = sKey(query), qc = q.replace(/ /g, '');
+    let toks = q.split(' ').filter(Boolean);
+    const long = toks.filter(t=>t.length > 1);
+    if(long.length) toks = long;
+    return text=>{
+      if(!q) return true;
+      const k = sKey(text);
+      return k.includes(q) || k.replace(/ /g, '').includes(qc) || toks.every(t=>k.includes(t));
+    };
+  }
   const formatOf = it => it.category || ['Manhwa','Manga','Manhua'].find(c=>titles[c].includes(it)) || '';
 
   // Saat belum mengetik atau memilih filter: tampilkan Update terbaru (manhwa, manga, manhua bercampur)
@@ -4371,14 +4396,15 @@
   });
 
   function runSearch(query){
-    const q = query.trim().toLowerCase();
+    const q = sKey(query) ? query.trim() : '';
+    const match = makeMatcher(query);
     const wrap = document.getElementById('searchResultsWrap');
     if(!q && !hasActiveFilters()){ renderSearchUpdates(); return; }
     const results = allTitles().filter(it=>{
       const matchesQuery = !q ||
-        it.t.toLowerCase().includes(q) ||
-        it.author.toLowerCase().includes(q) ||
-        it.genres.some(g=>g.toLowerCase().includes(q));
+        match(it.t) ||
+        match(it.author) ||
+        it.genres.some(g=>match(g));
       const itGenres = it.genres.map(norm);
       const matchesGenre  = selectedFilters.size === 0 || [...selectedFilters].every(g=>itGenres.includes(norm(g)));
       const matchesStatus = selectedStatus.size === 0 || [...selectedStatus].some(v=>norm(v) === norm(it.status));
