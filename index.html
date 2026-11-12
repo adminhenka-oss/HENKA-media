@@ -4350,6 +4350,7 @@
   // Saat belum mengetik atau memilih filter: tampilkan Update terbaru (manhwa, manga, manhua bercampur)
   const SEARCH_UPDATE_PAGE = 30;
   let searchUpdatePage = 1;
+  let searchResultPage = 1, searchMode = 'updates', searchLast = { results:[], label:'' };
 
   // daftar nomor halaman: 1 … 4 5 6 … 10
   function pagerNumbers(total, cur){
@@ -4370,28 +4371,55 @@
     searchUpdatePage = Math.min(Math.max(1, searchUpdatePage), totalPages);
     const start = (searchUpdatePage - 1) * SEARCH_UPDATE_PAGE;
     const shown = all.slice(start, start + SEARCH_UPDATE_PAGE);
-    const chev = d => `<svg viewBox="0 0 24 24"><polyline points="${d}"/></svg>`;
-    const pager = totalPages > 1 ? `
-      <nav class="pager" id="searchPager" aria-label="Halaman">
-        <button type="button" class="pg-arrow" data-pg="prev" ${searchUpdatePage === 1 ? 'disabled' : ''} aria-label="Sebelumnya">${chev('15 18 9 12 15 6')}</button>
-        ${pagerNumbers(totalPages, searchUpdatePage).map(n=> n === '…'
-          ? '<span class="pg-gap">…</span>'
-          : `<button type="button" class="pg-num ${n === searchUpdatePage ? 'on' : ''}" data-pg="${n}">${n}</button>`).join('')}
-        <button type="button" class="pg-arrow" data-pg="next" ${searchUpdatePage === totalPages ? 'disabled' : ''} aria-label="Berikutnya">${chev('9 18 15 12 9 6')}</button>
-      </nav>` : '';
+    searchMode = 'updates';
     wrap.innerHTML = `
       <div class="grid" style="margin-top:10px">${shown.map(it=>cardHTML(it, false, true)).join('')}</div>
-      ${pager}`;
+      ${searchPagerHTML(totalPages, searchUpdatePage)}`;
+  }
+
+  function searchPagerHTML(totalPages, cur){
+    if(totalPages <= 1) return '';
+    const chev = d => `<svg viewBox="0 0 24 24"><polyline points="${d}"/></svg>`;
+    return `
+      <nav class="pager" id="searchPager" aria-label="Halaman">
+        <button type="button" class="pg-arrow" data-pg="prev" ${cur === 1 ? 'disabled' : ''} aria-label="Sebelumnya">${chev('15 18 9 12 15 6')}</button>
+        ${pagerNumbers(totalPages, cur).map(n=> n === '…'
+          ? '<span class="pg-gap">…</span>'
+          : `<button type="button" class="pg-num ${n === cur ? 'on' : ''}" data-pg="${n}">${n}</button>`).join('')}
+        <button type="button" class="pg-arrow" data-pg="next" ${cur === totalPages ? 'disabled' : ''} aria-label="Berikutnya">${chev('9 18 15 12 9 6')}</button>
+      </nav>`;
+  }
+
+  // hasil pencarian: kartu yang sama dengan daftar Update terbaru (cover, bendera, NEW/UP, views, chapter)
+  function renderSearchResults(){
+    const wrap = document.getElementById('searchResultsWrap');
+    const { results, label } = searchLast;
+    searchMode = 'results';
+    if(results.length === 0){
+      wrap.innerHTML = `<div class="search-empty">Tidak ada hasil yang cocok.</div>`;
+      return;
+    }
+    const totalPages = Math.max(1, Math.ceil(results.length / SEARCH_UPDATE_PAGE));
+    searchResultPage = Math.min(Math.max(1, searchResultPage), totalPages);
+    const start = (searchResultPage - 1) * SEARCH_UPDATE_PAGE;
+    const shown = results.slice(start, start + SEARCH_UPDATE_PAGE);
+    wrap.innerHTML = `
+      <div class="search-results-label">${label}</div>
+      <div class="grid">${shown.map(it=>cardHTML(it, false, true)).join('')}</div>
+      ${searchPagerHTML(totalPages, searchResultPage)}`;
   }
 
   document.getElementById('searchResultsWrap').addEventListener('click', e=>{
     const b = e.target.closest('#searchPager button[data-pg]');
     if(!b || b.disabled) return;
     const v = b.dataset.pg;
-    if(v === 'prev') searchUpdatePage -= 1;
-    else if(v === 'next') searchUpdatePage += 1;
-    else searchUpdatePage = Number(v);
-    renderSearchUpdates();
+    const res = searchMode === 'results';
+    let pg = res ? searchResultPage : searchUpdatePage;
+    if(v === 'prev') pg -= 1;
+    else if(v === 'next') pg += 1;
+    else pg = Number(v);
+    if(res){ searchResultPage = pg; renderSearchResults(); }
+    else { searchUpdatePage = pg; renderSearchUpdates(); }
     window.scrollTo(0, 0);
   });
 
@@ -4412,22 +4440,11 @@
       return matchesQuery && matchesGenre && matchesStatus && matchesFormat;
     });
     const label = q
-      ? `${results.length} hasil untuk "${query}"`
-      : `${results.length} hasil untuk filter: ${[...selectedFilters, ...selectedStatus, ...selectedFormat].join(', ')}`;
-    if(results.length === 0){
-      wrap.innerHTML = `<div class="search-empty">Tidak ada hasil yang cocok.</div>`;
-      return;
-    }
-    wrap.innerHTML = `
-      <div class="search-results-label">${label}</div>
-      ${results.map(it=>`
-        <div class="search-result-row" data-title="${it.t}">
-          <div class="search-result-cover" style="${coverStyle(it)}"></div>
-          <div>
-            <div class="search-result-title">${it.t}</div>
-            <div class="search-result-sub">${it.genres.join(', ')} · ${it.author}</div>
-          </div>
-        </div>`).join('')}`;
+      ? `${results.length} hasil untuk "${nEsc(query.trim())}"`
+      : `${results.length} hasil untuk filter: ${nEsc([...selectedFilters, ...selectedStatus, ...selectedFormat].join(', '))}`;
+    searchLast = { results, label };
+    searchResultPage = 1;
+    renderSearchResults();
   }
 
   function renderFilterChips(){
