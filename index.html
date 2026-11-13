@@ -134,6 +134,82 @@
   .notif-empty{ padding:60px 28px; text-align:center; color: var(--text-muted); font-size:0.9rem; line-height:1.5; }
   .notif-empty b{ display:block; margin-bottom:6px; color: var(--text); font-size:1rem; }
 
+  /* ===== Info Komik / Pengumuman ===== */
+  .info-view{ background: var(--bg); min-height:100vh; padding-bottom:30px; }
+  .info-tabs{
+    position:sticky; top:0; z-index:20; display:flex; background: var(--bg);
+    border-bottom:1px solid var(--border);
+  }
+  .info-tab{
+    position:relative; flex:1; padding:16px 0 18px; border:none; background:none; color: var(--text-muted);
+    font:inherit; font-size:1rem; font-weight:700; cursor:pointer;
+  }
+  .info-tab.on{ color: var(--text); }
+  .info-tab.on::after{
+    content:""; position:absolute; left:20%; right:20%; bottom:0; height:4px; border-radius:4px; background: var(--accent);
+  }
+  .ip{
+    display:grid; grid-template-columns:44px minmax(0,1fr); column-gap:12px; padding:16px 16px 18px;
+    border-bottom:1px solid var(--border);
+  }
+  .ip-avatar{
+    width:44px; height:44px; border-radius:50%; background: var(--henka-logo, var(--bg-panel)) center/cover no-repeat;
+    border:1px solid var(--border);
+  }
+  .ip-head{ display:flex; align-items:center; gap:6px; min-height:24px; }
+  .ip-name{ font-weight:800; font-size:0.98rem; }
+  .ip-check{ width:16px; height:16px; color: var(--accent); flex:none; }
+  .ip-time{ color: var(--text-faint); font-size:0.85rem; }
+  .ip-body{ margin-top:2px; font-size:0.95rem; line-height:1.5; white-space:pre-wrap; word-break:break-word; }
+  .ip-body a{ color:#4da3ff; text-decoration:none; }
+  .ip-tag{ color:#4da3ff; cursor:pointer; border-radius:4px; }
+  .ip-tag:active{ background:rgba(77,163,255,0.18); }
+  .ip-imgs{
+    grid-column:1 / -1; display:flex; gap:8px; overflow-x:auto; scroll-snap-type:x mandatory;
+    margin:12px -16px 0; padding:0 16px; scroll-padding:0 16px; scrollbar-width:none;
+  }
+  .ip-imgs::-webkit-scrollbar{ display:none; }
+  .ip-imgs img{
+    flex:none; width:62%; aspect-ratio:3 / 4; object-fit:cover; border-radius:14px;
+    background: var(--bg-panel); border:1px solid var(--border); scroll-snap-align:start; cursor:zoom-in;
+  }
+  .ip-imgs.one img{ width:70%; aspect-ratio:auto; height:auto; max-height:420px; }
+  .info-note{ padding:60px 28px; text-align:center; color: var(--text-muted); font-size:0.9rem; line-height:1.5; }
+  .info-note b{ display:block; margin-bottom:6px; color: var(--text); font-size:1rem; }
+  .info-more{
+    display:block; margin:18px auto 0; padding:10px 22px; border-radius:999px; background: var(--bg-panel);
+    border:1px solid var(--border); color: var(--text); font:inherit; font-weight:700; font-size:0.85rem; cursor:pointer;
+  }
+  .lightbox{ position:fixed; inset:0; z-index:200; background:rgba(0,0,0,0.94); display:flex; align-items:center; }
+  .lightbox[hidden]{ display:none; }
+  .lb-strip{ display:flex; width:100%; height:100%; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none; }
+  .lb-strip::-webkit-scrollbar{ display:none; }
+  .lb-strip img{ flex:none; width:100vw; height:100%; object-fit:contain; scroll-snap-align:center; }
+  .lb-close{
+    position:absolute; top:calc(12px + env(safe-area-inset-top, 0px)); right:14px; z-index:2; width:40px; height:40px;
+    border-radius:50%; border:none; background:rgba(255,255,255,0.16); color:#fff; font-size:1.2rem; cursor:pointer;
+  }
+  /* admin: form dan daftar Info Komik */
+  .info-prev{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+  .info-prev .ipv{ position:relative; width:72px; height:72px; border-radius:10px; overflow:hidden; border:1px solid var(--border); }
+  .info-prev .ipv img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .info-prev .ipv button{
+    position:absolute; top:3px; right:3px; width:22px; height:22px; padding:0; border:none; border-radius:50%;
+    background:rgba(0,0,0,0.7); color:#fff; font-size:0.8rem; line-height:22px; cursor:pointer;
+  }
+  .ia-row{ background: var(--bg-panel); border:1px solid var(--border); border-radius:14px; padding:12px; margin-bottom:8px; }
+  .ia-top{ display:flex; align-items:center; gap:8px; font-size:0.76rem; color: var(--text-faint); margin-bottom:6px; }
+  .ia-kind{ padding:2px 8px; border-radius:999px; background: var(--accent); color:#fff; font-weight:800; font-size:0.66rem; }
+  .ia-kind.peng{ background:#f59e0b; }
+  .ia-text{ font-size:0.88rem; line-height:1.45; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; white-space:pre-wrap; word-break:break-word; }
+  .ia-meta{ margin-top:6px; font-size:0.76rem; color: var(--text-faint); }
+  .ia-actions{ display:flex; gap:8px; margin-top:10px; }
+  .ia-actions button{
+    flex:1; padding:9px; border-radius:999px; border:1px solid var(--border); background:transparent;
+    color: var(--text); font:inherit; font-weight:700; font-size:0.82rem; cursor:pointer;
+  }
+  .ia-actions button.del{ color:#ff5d6c; }
+
   main{ padding: 6px 20px 0; }
 
   .search-row{ display:flex; gap:10px; margin: 14px 0 22px; }
@@ -1217,6 +1293,18 @@
   <div id="notifList"></div>
 </div>
 
+<div class="info-view" id="infoView" hidden>
+  <div class="info-tabs" id="infoTabs">
+    <button type="button" class="info-tab on" data-ik="info">Info Komik</button>
+    <button type="button" class="info-tab" data-ik="pengumuman">Pengumuman</button>
+  </div>
+  <div id="infoFeed"></div>
+</div>
+<div class="lightbox" id="infoLightbox" hidden>
+  <button type="button" class="lb-close" id="lbClose" aria-label="Tutup">✕</button>
+  <div class="lb-strip" id="lbStrip"></div>
+</div>
+
 <div class="koleksi-view" id="koleksiView" hidden>
   <div class="koleksi-header">
     <h1>Koleksi</h1>
@@ -1270,6 +1358,7 @@
   <div class="admin-tabs" id="adminTabs">
     <button type="button" class="admin-tab active" data-atab="titles">Judul</button>
     <button type="button" class="admin-tab" data-atab="chapters">Chapter</button>
+    <button type="button" class="admin-tab" data-atab="info">Info Komik</button>
   </div>
 
   <section class="admin-pane" id="adminPaneTitles">
@@ -1421,6 +1510,41 @@
     <div id="chapterImageList"></div>
     <button type="button" class="admin-more" id="chapterMore" hidden></button>
   </section>
+
+  <section class="admin-pane" id="adminPaneInfo" hidden>
+    <details class="admin-card" id="infoFormCard" open>
+      <summary><span id="infoFormTitle">+ Tambah postingan</span></summary>
+      <form class="admin-form" id="infoForm">
+        <div class="admin-field">
+          <label>Jenis</label>
+          <select id="infoKind">
+            <option value="info">Info Komik</option>
+            <option value="pengumuman">Pengumuman</option>
+          </select>
+        </div>
+        <div class="admin-field">
+          <label>Teks</label>
+          <textarea id="infoBody" rows="7" placeholder="Tulis info atau pengumuman… Hashtag (#judul) dan tautan (https://…) otomatis berwarna."></textarea>
+        </div>
+        <div class="admin-field">
+          <label>Judul tujuan tag (opsional)</label>
+          <input type="search" class="admin-search small" id="infoTitleSearch" placeholder="Cari judul untuk dipilih…">
+          <select id="infoTitle"></select>
+          <div class="admin-hint">Menyentuh hashtag di postingan membuka komiknya. Hashtag yang sama dengan nama judul (mis. #DamnReincarnation) otomatis cocok. Kalau judul dipilih di sini tapi teks tanpa hashtag, tag judulnya ditambahkan di bawah teks.</div>
+        </div>
+        <div class="admin-field">
+          <label>Gambar (opsional, maksimal 10)</label>
+          <input type="file" id="infoFiles" accept="image/*" multiple>
+          <div class="admin-hint" id="infoFilesHint">Gambar pertama tampil paling kiri. Ketuk ✕ untuk membuang gambar.</div>
+          <div class="info-prev" id="infoPrev"></div>
+        </div>
+        <button type="submit" class="admin-submit" id="infoSubmit">Terbitkan</button>
+        <button type="button" class="admin-cancel" id="infoCancel" hidden>Batal edit</button>
+      </form>
+    </details>
+    <div class="admin-section-head"><h3>Daftar postingan <span class="admin-count" id="infoAdminCount"></span></h3></div>
+    <div id="infoAdminList"></div>
+  </section>
 </div>
 
 <div class="reader-view" id="readerView" hidden>
@@ -1482,6 +1606,10 @@
   <button class="nav-item" id="navHistory">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
     Riwayat
+  </button>
+  <button class="nav-item" id="navInfo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M10 4v16"/><path d="M3 12h7"/><path d="M10 9h11"/></svg>
+    Info
   </button>
   <button class="nav-item" id="navCollection">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h6v16l-3-2-3 2z"/><path d="M14 4h6v16l-3-2-3 2z"/></svg>
@@ -2558,6 +2686,7 @@
     else if(detailOrigin === 'seeall' && seeAllState){ showSeeAll(seeAllState.kind, seeAllState.genre); }
     else if(detailOrigin === 'profile'){ showProfile(); }
     else if(detailOrigin === 'notif'){ showNotif(); }
+    else if(detailOrigin === 'info'){ showInfo(); }
     else { showHome(); }
   }
 
@@ -2623,6 +2752,7 @@
     document.getElementById('koleksiView').hidden = true;
     document.getElementById('seeAllView').hidden = true;
     document.getElementById('notifView').hidden = true;
+    document.getElementById('infoView').hidden = true;
     document.getElementById('profileView').hidden = true;
     document.getElementById('searchView').hidden = true;
     document.getElementById('adminView').hidden = true;
@@ -3056,6 +3186,8 @@
     document.querySelectorAll('#adminTabs .admin-tab').forEach(b=>b.classList.toggle('active', b.dataset.atab === name));
     document.getElementById('adminPaneTitles').hidden = name !== 'titles';
     document.getElementById('adminPaneChapters').hidden = name !== 'chapters';
+    document.getElementById('adminPaneInfo').hidden = name !== 'info';
+    if(name === 'info'){ populateInfoTitleSelect(); loadInfoAdmin(); }
     window.scrollTo(0,0);
   }
 
@@ -4673,6 +4805,7 @@
     else if(activeTab === 'koleksi'){ showKoleksi(); }
     else if(activeTab === 'profile'){ showProfile(); }
     else if(activeTab === 'notif'){ showNotif(); }
+    else if(activeTab === 'info'){ showInfo(); }
     else { showHome(); }
   }
 
@@ -4707,6 +4840,7 @@
   document.getElementById('navHome').addEventListener('click', showHome);
   document.getElementById('navHistory').addEventListener('click', showRiwayat);
   document.getElementById('navCollection').addEventListener('click', showKoleksi);
+  document.getElementById('navInfo').addEventListener('click', showInfo);
   document.getElementById('navProfile').addEventListener('click', showProfile);
   function updateHeaderAvatar(){
     const el = document.getElementById('headerAvatar');
@@ -5276,10 +5410,320 @@
     loadNotifs().then(changed=>{ if(changed && !document.getElementById('notifView').hidden) renderNotif(); });
   });
 
+  // ===== Info Komik & Pengumuman =====
+  const INFO_PAGE = 12;
+  const mkInfo = ()=>({ items:[], more:false, at:0, loading:false, err:null });
+  const infoState = { tab:'info', info:mkInfo(), pengumuman:mkInfo() };
+
+  // logo Henka sebagai foto profil: diambil sekali dari header, dipakai lewat variabel CSS
+  (function(){
+    const img = document.querySelector('.logo-mark img');
+    if(img && img.src) document.documentElement.style.setProperty('--henka-logo', 'url("' + img.src + '")');
+  })();
+
+  function infoTime(v){
+    const t = Date.parse(v); if(!t) return '';
+    const sec = Math.max(0, (Date.now() - t) / 1000);
+    if(sec < 60) return 'Baru saja';
+    const m = Math.floor(sec / 60); if(m < 60) return m + ' mnt';
+    const h = Math.floor(m / 60); if(h < 24) return h + ' jam';
+    const d = Math.floor(h / 24); if(d < 7) return d + ' hari';
+    const dt = new Date(t);
+    return dt.getDate() + ' ' + BULAN[dt.getMonth()] + (dt.getFullYear() === new Date().getFullYear() ? '' : ' ' + dt.getFullYear());
+  }
+  // teks aman: tautan http(s) dan #hashtag diberi warna, baris baru dipertahankan lewat CSS
+  function infoTextHTML(t){
+    return nEsc(t)
+      .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>')
+      .replace(/(^|[\s>])#([\p{L}\p{N}_]+)/gu, '$1<span class="ip-tag" role="link" tabindex="0" data-tag="$2">#$2</span>');
+  }
+  // tag yang disentuh membuka komiknya: nama judul persis -> judul yang ditautkan di postingan (kalau berkaitan)
+  // -> satu-satunya judul yang namanya memuat tag -> kalau tidak ada, buka pencarian dengan tag itu
+  function infoTagTarget(tag, post){
+    const t = sKey(tag).replace(/ /g, '');
+    if(!t) return null;
+    const keyOf = it=>sKey(it.t).replace(/ /g, '');
+    const all = allTitles();
+    const exact = all.find(it=>keyOf(it) === t);
+    if(exact) return exact;
+    const linked = post && post.title_id ? titleById(post.title_id) : null;
+    if(linked){ const k = keyOf(linked); if(k.includes(t) || t.includes(k)) return linked; }
+    if(t.length >= 4){
+      const part = all.filter(it=>keyOf(it).includes(t));
+      if(part.length === 1) return part[0];
+    }
+    return null;
+  }
+  const IP_CHECK = '<svg class="ip-check" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 1.8 3-.2 1 2.8 2.5 1.7-.9 2.9.9 2.9-2.5 1.7-1 2.8-3-.2L12 22l-2.4-1.8-3 .2-1-2.8-2.5-1.7.9-2.9-.9-2.9 2.5-1.7 1-2.8 3 .2z"/><path d="M8.5 12.2l2.4 2.4 4.6-4.8" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+  function infoPostHTML(p){
+    const imgs = (p.image_urls || []).map(proxyUrl).filter(Boolean);
+    const it = p.title_id ? titleById(p.title_id) : null;
+    return '<article class="ip" data-pid="' + nEsc(p.id) + '">' +
+      '<div class="ip-avatar"></div>' +
+      '<div><div class="ip-head"><span class="ip-name">Henka</span>' + IP_CHECK + '<span class="ip-time">· ' + infoTime(p.created_at) + '</span></div>' +
+      (p.body ? '<div class="ip-body">' + infoTextHTML(p.body) + '</div>' : '') +
+      // judul ditautkan tapi teksnya tanpa hashtag: tag judul ditambahkan otomatis
+      (it && !/#[\p{L}\p{N}_]/u.test(p.body || '') ? '<div class="ip-body"><span class="ip-tag" role="link" tabindex="0" data-tag="' + nEsc(it.t.replace(/[^\p{L}\p{N}]+/gu, '')) + '">#' + nEsc(it.t.replace(/[^\p{L}\p{N}]+/gu, '')) + '</span></div>' : '') + '</div>' +
+      (imgs.length ? '<div class="ip-imgs' + (imgs.length === 1 ? ' one' : '') + '">' +
+        imgs.map((u, i)=>'<img src="' + nEsc(u) + '" alt="" loading="lazy" decoding="async" data-i="' + i + '">').join('') + '</div>' : '') +
+      '</article>';
+  }
+
+  function renderInfo(){
+    const kind = infoState.tab, S = infoState[kind];
+    document.querySelectorAll('#infoTabs .info-tab').forEach(b=>b.classList.toggle('on', b.dataset.ik === kind));
+    const feed = document.getElementById('infoFeed');
+    if(!S.items.length){
+      feed.innerHTML = S.loading
+        ? '<div class="info-note">Memuat…</div>'
+        : S.err === 'missing'
+          ? '<div class="info-note"><b>Belum tersedia</b>Fitur ini sedang disiapkan.</div>'
+          : S.err
+            ? '<div class="info-note"><b>Gagal memuat</b>Periksa koneksi, lalu buka tab ini lagi.</div>'
+            : '<div class="info-note"><b>' + (kind === 'info' ? 'Belum ada info komik' : 'Belum ada pengumuman') + '</b>Kabar terbaru dari Henka akan muncul di sini.</div>';
+      return;
+    }
+    feed.innerHTML = S.items.map(infoPostHTML).join('') +
+      (S.more ? '<button type="button" class="info-more" id="infoMore">' + (S.loading ? 'Memuat…' : 'Muat lebih banyak') + '</button>' : '');
+  }
+
+  async function loadInfo(kind, reset){
+    const S = infoState[kind];
+    if(S.loading) return;
+    S.loading = true;
+    if(infoState.tab === kind && !document.getElementById('infoView').hidden) renderInfo();
+    try{
+      const from = reset ? 0 : S.items.length;
+      const { data, error } = await sb.from('info_posts').select('id, kind, body, image_urls, title_id, created_at')
+        .eq('kind', kind).order('created_at', { ascending:false }).range(from, from + INFO_PAGE - 1);
+      if(error) throw error;
+      const rows = data || [];
+      S.items = reset ? rows : S.items.concat(rows);
+      S.more = rows.length === INFO_PAGE;
+      S.err = null; S.at = Date.now();
+    }catch(e){
+      S.err = cmIsMissing(e) ? 'missing' : 'error';
+    }finally{
+      S.loading = false;
+    }
+    if(infoState.tab === kind && !document.getElementById('infoView').hidden) renderInfo();
+  }
+
+  function showInfo(){
+    renderInfo();
+    const S = infoState[infoState.tab];
+    if(!S.at || Date.now() - S.at > 60000) loadInfo(infoState.tab, true);
+    hideAllTabs();
+    document.getElementById('infoView').hidden = false;
+    activeTab = 'info';
+    setActiveNav('navInfo');
+    window.scrollTo(0,0);
+  }
+
+  document.getElementById('infoTabs').addEventListener('click', e=>{
+    const b = e.target.closest('.info-tab');
+    if(!b) return;
+    infoState.tab = b.dataset.ik;
+    renderInfo();
+    const S = infoState[infoState.tab];
+    if(!S.at || Date.now() - S.at > 60000) loadInfo(infoState.tab, true);
+    window.scrollTo(0,0);
+  });
+  document.getElementById('infoFeed').addEventListener('click', e=>{
+    if(e.target.closest('#infoMore')){ loadInfo(infoState.tab, false); return; }
+    const img = e.target.closest('.ip-imgs img');
+    if(img){
+      const strip = document.getElementById('lbStrip');
+      strip.innerHTML = [...img.parentNode.querySelectorAll('img')].map(i=>'<img src="' + nEsc(i.src) + '" alt="">').join('');
+      document.getElementById('infoLightbox').hidden = false;
+      strip.scrollLeft = Number(img.dataset.i) * strip.clientWidth;
+      return;
+    }
+    const tag = e.target.closest('.ip-tag');
+    if(tag) openInfoTag(tag);
+  });
+  document.getElementById('infoFeed').addEventListener('keydown', e=>{
+    if(e.key !== 'Enter') return;
+    const tag = e.target.closest && e.target.closest('.ip-tag');
+    if(tag) openInfoTag(tag);
+  });
+  function openInfoTag(tagEl){
+    const post = infoState[infoState.tab].items.find(x=>String(x.id) === String(tagEl.closest('.ip').dataset.pid));
+    const it = infoTagTarget(tagEl.dataset.tag, post);
+    if(it){ openDetail(it.t); return; }
+    document.getElementById('searchInput').value = tagEl.dataset.tag;   // tidak ada judul yang cocok: cari
+    openSearchOverlay();
+  }
+  const closeLightbox = ()=>{ document.getElementById('infoLightbox').hidden = true; document.getElementById('lbStrip').innerHTML = ''; };
+  document.getElementById('lbClose').addEventListener('click', closeLightbox);
+  document.getElementById('lbStrip').addEventListener('click', e=>{ if(e.target.tagName === 'IMG' || e.target.id === 'lbStrip') closeLightbox(); });
+
+  // ----- admin: tulis, ubah, hapus postingan -----
+  const infoAdmin = { editing:null, keep:[], added:[], posts:[], err:null };   // keep = alamat gambar lama, added = {file, url}
+  function infoToast(msg, keep){
+    const t = document.getElementById('adminToast');
+    t.textContent = msg; t.hidden = false;
+    clearTimeout(infoToast.timer);
+    if(!keep) infoToast.timer = setTimeout(()=>{ t.hidden = true; }, 4000);
+  }
+  function populateInfoTitleSelect(){
+    const select = document.getElementById('infoTitle');
+    const q = (document.getElementById('infoTitleSearch').value || '').trim();
+    const match = makeMatcher(q);
+    const prev = select.value;
+    const list = allTitles().filter(it=>it.supabaseId).sort((a,b)=>a.t.localeCompare(b.t)).filter(it=>!q || match(it.t));
+    select.innerHTML = '<option value="">— Tidak ditautkan —</option>' +
+      list.slice(0, 200).map(it=>'<option value="' + nEsc(it.supabaseId) + '">' + nEsc(it.t) + '</option>').join('');
+    if(prev && [...select.options].some(o=>o.value === prev)) select.value = prev;
+  }
+  function renderInfoPreview(){
+    const box = document.getElementById('infoPrev');
+    const total = infoAdmin.keep.length + infoAdmin.added.length;
+    box.innerHTML =
+      infoAdmin.keep.map((u, i)=>'<div class="ipv"><img src="' + nEsc(proxyUrl(u)) + '" alt=""><button type="button" data-rm="k' + i + '" aria-label="Buang">✕</button></div>').join('') +
+      infoAdmin.added.map((a, i)=>'<div class="ipv"><img src="' + nEsc(a.url) + '" alt=""><button type="button" data-rm="a' + i + '" aria-label="Buang">✕</button></div>').join('');
+    document.getElementById('infoFilesHint').textContent = total
+      ? total + ' gambar dipilih. Ketuk ✕ untuk membuang.' : 'Gambar pertama tampil paling kiri. Ketuk ✕ untuk membuang gambar.';
+  }
+  function resetInfoForm(){
+    infoAdmin.added.forEach(a=>URL.revokeObjectURL(a.url));
+    Object.assign(infoAdmin, { editing:null, keep:[], added:[] });
+    document.getElementById('infoForm').reset();
+    document.getElementById('infoTitleSearch').value = '';
+    populateInfoTitleSelect();
+    document.getElementById('infoFormTitle').textContent = '+ Tambah postingan';
+    document.getElementById('infoSubmit').textContent = 'Terbitkan';
+    document.getElementById('infoCancel').hidden = true;
+    renderInfoPreview();
+  }
+  function renderInfoAdminList(){
+    const wrap = document.getElementById('infoAdminList');
+    const posts = infoAdmin.posts;
+    document.getElementById('infoAdminCount').textContent = posts.length ? '(' + posts.length + ')' : '';
+    if(infoAdmin.err === 'missing'){
+      wrap.innerHTML = '<div class="admin-empty">Tabel <b>info_posts</b> belum dibuat. Jalankan file <b>info-komik.sql</b> di Supabase SQL Editor, lalu muat ulang.</div>';
+      return;
+    }
+    if(infoAdmin.err){ wrap.innerHTML = '<div class="admin-empty">Gagal memuat daftar: ' + nEsc(infoAdmin.err) + '</div>'; return; }
+    if(!posts.length){ wrap.innerHTML = '<div class="admin-empty">Belum ada postingan. Isi form di atas lalu ketuk "Terbitkan".</div>'; return; }
+    wrap.innerHTML = posts.map(p=>{
+      const it = p.title_id ? titleById(p.title_id) : null;
+      const n = (p.image_urls || []).length;
+      return '<div class="ia-row" data-pid="' + nEsc(p.id) + '">' +
+        '<div class="ia-top"><span class="ia-kind' + (p.kind === 'pengumuman' ? ' peng' : '') + '">' + (p.kind === 'pengumuman' ? 'PENGUMUMAN' : 'INFO KOMIK') + '</span><span>' + infoTime(p.created_at) + '</span></div>' +
+        '<div class="ia-text">' + (p.body ? nEsc(p.body) : '<i>(hanya gambar)</i>') + '</div>' +
+        '<div class="ia-meta">' + (n ? n + ' gambar' : 'Tanpa gambar') + (it ? ' · ' + nEsc(it.t) : '') + '</div>' +
+        '<div class="ia-actions"><button type="button" data-ia="edit">Edit</button><button type="button" class="del" data-ia="del">Hapus</button></div></div>';
+    }).join('');
+  }
+  async function loadInfoAdmin(){
+    try{
+      const { data, error } = await sb.from('info_posts').select('id, kind, body, image_urls, title_id, created_at')
+        .order('created_at', { ascending:false }).limit(100);
+      if(error) throw error;
+      infoAdmin.posts = data || []; infoAdmin.err = null;
+    }catch(e){
+      infoAdmin.err = cmIsMissing(e) ? 'missing' : (e.message || 'error');
+    }
+    renderInfoAdminList();
+  }
+
+  document.getElementById('infoTitleSearch').addEventListener('input', populateInfoTitleSelect);
+  document.getElementById('infoFiles').addEventListener('change', e=>{
+    const files = [...e.target.files].filter(f=>/^image\//.test(f.type));
+    e.target.value = '';
+    for(const f of files){
+      if(infoAdmin.keep.length + infoAdmin.added.length >= 10){ infoToast('Maksimal 10 gambar per postingan.'); break; }
+      infoAdmin.added.push({ file:f, url:URL.createObjectURL(f) });
+    }
+    renderInfoPreview();
+  });
+  document.getElementById('infoPrev').addEventListener('click', e=>{
+    const b = e.target.closest('button[data-rm]');
+    if(!b) return;
+    const kind = b.dataset.rm[0], i = Number(b.dataset.rm.slice(1));
+    if(kind === 'k') infoAdmin.keep.splice(i, 1);
+    else{ URL.revokeObjectURL(infoAdmin.added[i].url); infoAdmin.added.splice(i, 1); }
+    renderInfoPreview();
+  });
+  document.getElementById('infoCancel').addEventListener('click', resetInfoForm);
+
+  document.getElementById('infoForm').addEventListener('submit', async e=>{
+    e.preventDefault();
+    if(!isAdmin()) return;
+    const btn = document.getElementById('infoSubmit');
+    const body = document.getElementById('infoBody').value.trim();
+    if(!body && !infoAdmin.keep.length && !infoAdmin.added.length){ infoToast('Isi teks atau pilih minimal satu gambar.'); return; }
+    btn.disabled = true;
+    try{
+      const urls = infoAdmin.keep.slice();
+      for(let i = 0; i < infoAdmin.added.length; i++){
+        btn.textContent = 'Mengunggah gambar ' + (i + 1) + '/' + infoAdmin.added.length + '…';
+        let f = infoAdmin.added[i].file;
+        try{ f = await shrinkImage(f, 1600, 0.86); }catch(err){}
+        urls.push(await uploadImage(f, 'info'));
+      }
+      btn.textContent = 'Menyimpan…';
+      const row = {
+        kind: document.getElementById('infoKind').value,
+        body, image_urls: urls,
+        title_id: document.getElementById('infoTitle').value || null,
+        updated_at: new Date().toISOString()
+      };
+      const q = infoAdmin.editing
+        ? sb.from('info_posts').update(row).eq('id', infoAdmin.editing)
+        : sb.from('info_posts').insert(row);
+      const { error } = await q;
+      if(error) throw error;
+      const wasEdit = !!infoAdmin.editing;
+      resetInfoForm();
+      infoState.info.at = 0; infoState.pengumuman.at = 0;
+      await loadInfoAdmin();
+      infoToast(wasEdit ? 'Postingan diperbarui.' : 'Postingan diterbitkan.');
+    }catch(err){
+      infoToast('Gagal menyimpan: ' + (cmIsMissing(err) ? 'tabel info_posts belum dibuat (jalankan info-komik.sql).' : (err.message || err)), true);
+    }finally{
+      btn.disabled = false;
+      btn.textContent = infoAdmin.editing ? 'Simpan perubahan' : 'Terbitkan';
+    }
+  });
+
+  document.getElementById('infoAdminList').addEventListener('click', async e=>{
+    const b = e.target.closest('button[data-ia]');
+    if(!b || !isAdmin()) return;
+    const id = b.closest('.ia-row').dataset.pid;
+    const p = infoAdmin.posts.find(x=>String(x.id) === String(id));
+    if(!p) return;
+    if(b.dataset.ia === 'edit'){
+      infoAdmin.added.forEach(a=>URL.revokeObjectURL(a.url));
+      Object.assign(infoAdmin, { editing:p.id, keep:(p.image_urls || []).slice(), added:[] });
+      document.getElementById('infoKind').value = p.kind;
+      document.getElementById('infoBody').value = p.body || '';
+      document.getElementById('infoTitleSearch').value = '';
+      populateInfoTitleSelect();
+      document.getElementById('infoTitle').value = p.title_id || '';
+      document.getElementById('infoFormTitle').textContent = 'Edit postingan';
+      document.getElementById('infoSubmit').textContent = 'Simpan perubahan';
+      document.getElementById('infoCancel').hidden = false;
+      document.getElementById('infoFormCard').open = true;
+      renderInfoPreview();
+      document.getElementById('infoForm').scrollIntoView({ behavior:'smooth', block:'start' });
+    }else{
+      if(!confirm('Hapus postingan ini? Gambarnya tidak lagi tampil di Henka.')) return;
+      const { error } = await sb.from('info_posts').delete().eq('id', p.id);
+      if(error){ infoToast('Gagal menghapus: ' + error.message, true); return; }
+      if(infoAdmin.editing === p.id) resetInfoForm();
+      infoState.info.at = 0; infoState.pengumuman.at = 0;
+      await loadInfoAdmin();
+      infoToast('Postingan dihapus.');
+    }
+  });
+
   const Nav = (function(){
     const $ = id => document.getElementById(id);
     const HOME = { n:'home' };
-    const TABS = ['riwayat','koleksi','profil'];
+    const TABS = ['info','riwayat','koleksi','profil'];
     const st = { i:0, stack:[], busy:false, pending:false, timer:null, ready:false };
 
     function titleKey(title){
@@ -5295,7 +5739,7 @@
       switch(r.n){
         case 'detail':  return base + '#/judul/' + encodeURIComponent(titleKey(r.t));
         case 'reader':  return base + '#/baca/' + encodeURIComponent(titleKey(r.t)) + '/' + r.c;
-        case 'riwayat': case 'koleksi': case 'profil': case 'admin': return base + '#/' + r.n;
+        case 'riwayat': case 'koleksi': case 'profil': case 'admin': case 'info': return base + '#/' + r.n;
         case 'notif':   return base + '#/notifikasi';
         case 'search':  return base + '#/cari';
         case 'seeall':  return base + '#/semua/' + r.k + '/' + encodeURIComponent(r.g);
@@ -5327,6 +5771,7 @@
       else if(vis('adminView'))    r = { n:'admin' };
       else if(vis('seeAllView'))   r = seeAllState ? { n:'seeall', k:seeAllState.kind, g:seeAllState.genre } : null;
       else if(vis('notifView'))    r = { n:'notif' };
+      else if(vis('infoView'))     r = { n:'info' };
       else if(vis('riwayatView'))  r = { n:'riwayat' };
       else if(vis('koleksiView'))  r = { n:'koleksi' };
       else if(vis('profileView'))  r = { n:'profil' };
@@ -5365,6 +5810,7 @@
           await openReader(t.t, t.c);
           break;
         case 'detail':  leave(); await openDetail(t.t); break;
+        case 'info':    leave(); showInfo(); break;
         case 'riwayat': leave(); showRiwayat(); break;
         case 'koleksi': leave(); showKoleksi(); break;
         case 'notif':   leave(); showNotif(); break;
@@ -5466,7 +5912,7 @@
       }
       window.addEventListener('popstate', onPop);
       const mo = new MutationObserver(schedule);
-      ['readerView','detailView','searchView','adminView','seeAllView','notifView','riwayatView','koleksiView','profileView','readerSheet','appSheet']
+      ['readerView','detailView','searchView','adminView','seeAllView','notifView','infoView','riwayatView','koleksiView','profileView','readerSheet','appSheet']
         .forEach(id=>mo.observe($(id), { attributes:true, attributeFilter:['hidden'] }));
       mo.observe(document.querySelector('main'), { attributes:true, attributeFilter:['style'] });
       ['readerChapterLabel','detailTitle'].forEach(id=>mo.observe($(id), { childList:true, characterData:true, subtree:true }));
