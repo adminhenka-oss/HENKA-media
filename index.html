@@ -1556,6 +1556,18 @@
       <button type="button" class="admin-submit" id="mirSyncBtn">Sinkron sekarang</button>
       <button type="button" class="admin-cancel" id="mirSyncAllBtn">Sinkron semua halaman (±5 menit)</button>
     </div>
+    <div style="border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px;background:var(--bg-panel)">
+      <div class="admin-field">
+        <label for="mirEditSearch">Edit judul Mirror</label>
+        <input type="search" id="mirEditSearch" placeholder="Cari judul Mirror…" autocomplete="off">
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 8px" id="mirEditFilters">
+        <button type="button" class="src-btn active" data-mirf="all">Pencarian</button>
+        <button type="button" class="src-btn" data-mirf="hidden">Disembunyikan</button>
+        <button type="button" class="src-btn" data-mirf="edited">Sudah diedit</button>
+      </div>
+      <div id="mirEditList"></div>
+    </div>
     <div style="border:1px solid var(--border);border-radius:14px;padding:14px;background:var(--bg-panel)">
       <div class="ch-pages" id="mirCount" style="white-space:normal">Memuat jumlah…</div>
       <button type="button" class="admin-cancel" id="mirWipeBtn" style="margin-top:10px">Hapus semua judul Mirror</button>
@@ -1779,6 +1791,9 @@
       isPopular: !!row.is_popular,
       source: row.source === 'mirror' ? 'mirror' : 'project',
       mirrorSlug: row.mirror_slug || null,
+      mirrorHidden: !!row.mirror_hidden,
+      mirrorEdited: !!row.mirror_edited,
+      mirrorOverride: row.mirror_override || undefined,
       mirrorUpdatedAt: row.mirror_updated_at ? (Date.parse(row.mirror_updated_at) || 0) : 0,
       isCustom: true
     };
@@ -1809,7 +1824,8 @@
   // diambil langsung dari henka-mirror saat dibuka, tidak disalin ke server Henka.
   const MIRROR_API = 'https://henka-mirror.vercel.app';
   const MIRROR_CREDIT = { name: 'Mirror', url: '' };   // isi nama dan alamat web sumber di sini kalau ingin dicantumkan sebagai "Sumber"
-  const MIRROR_COLS = 'id,category,title,cover_url,rating,status,chapter_count,tag,views,color_1,color_2,source,mirror_slug,mirror_updated_at,genres,author';
+  const MIRROR_COLS_BASE = 'id,category,title,cover_url,rating,status,chapter_count,tag,views,color_1,color_2,source,mirror_slug,mirror_updated_at,genres,author';
+  const MIRROR_COLS = MIRROR_COLS_BASE + ',mirror_edited';
   const mirEsc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const sleepMs = ms => new Promise(r=>setTimeout(r, ms));
 
@@ -1914,30 +1930,44 @@
         <div class="info-row"><div class="info-label">${label}</div><div class="info-vals">${chips}</div></div>`).join('');
     };
     paintRows([]);
-    try{
-      const d = await mirrorFetch('/?komik=' + encodeURIComponent(item.mirrorSlug));
-      if(!alive()) return;
-      const det = d.detail || {};
-      const syn = String(d.desk || '').replace(/\r/g, '').trim().replace(/\n{3,}/g, '\n\n');
-      synEl.textContent = syn || 'Belum ada sinopsis.';
-      synEl.classList.add('clamped');
-      document.getElementById('synopsisToggle').textContent = 'Selengkapnya ⌄';
-      fitSynopsis();
-      const stKey = mirStatusKey(det.status);
-      document.getElementById('detailStatus').textContent = stKey === 'ongoing' ? 'Ongoing' : stKey === 'hiatus' ? 'Hiatus' : 'Completed';
-      const stLine = document.querySelector('.status-line');
-      stLine.classList.remove('st-ongoing', 'st-hiatus', 'st-completed');
-      stLine.classList.add('st-' + stKey);
-      const extra = [];
-      const genres = (d.genre || []).map(g=>g && g.nama).filter(Boolean);
-      if(genres.length) extra.push(['Genre', genres.map(g=>`<span class="info-chip">${mirEsc(g)}</span>`).join('')]);
-      if(det.pengarang) extra.push(['Penulis', `<span class="info-chip">${mirEsc(det.pengarang)}</span>`]);
-      if(det.ilustrator) extra.push(['Artis', `<span class="info-chip">${mirEsc(det.ilustrator)}</span>`]);
-      paintRows(extra);
-    }catch(e){
-      if(!alive()) return;
-      synEl.textContent = 'Info judul belum bisa dimuat dari Mirror. Coba lagi nanti.';
+    // isian yang kamu ubah sendiri di Panel Admin (kalau ada) menang atas data dari sumber
+    let ov = null;
+    if(item.mirrorEdited){
+      if(item.mirrorOverride === undefined){
+        try{
+          const r = await sb.from('titles').select('mirror_override').eq('id', item.supabaseId).single();
+          item.mirrorOverride = (r.data && r.data.mirror_override) || null;
+        }catch(e){ item.mirrorOverride = null; }
+      }
+      ov = item.mirrorOverride || null;
     }
+    let d = null;
+    try{ d = await mirrorFetch('/?komik=' + encodeURIComponent(item.mirrorSlug)); }catch(e){ d = null; }
+    if(!alive()) return;
+    if(!d && !ov){
+      synEl.textContent = 'Info judul belum bisa dimuat dari Mirror. Coba lagi nanti.';
+      return;
+    }
+    d = d || {};
+    const det = d.detail || {};
+    const syn = String((ov && ov.synopsis) || d.desk || '').replace(/\r/g, '').trim().replace(/\n{3,}/g, '\n\n');
+    synEl.textContent = syn || 'Belum ada sinopsis.';
+    synEl.classList.add('clamped');
+    document.getElementById('synopsisToggle').textContent = 'Selengkapnya ⌄';
+    fitSynopsis();
+    const stKey = mirStatusKey((ov && ov.status) || det.status);
+    document.getElementById('detailStatus').textContent = stKey === 'ongoing' ? 'Ongoing' : stKey === 'hiatus' ? 'Hiatus' : 'Completed';
+    const stLine = document.querySelector('.status-line');
+    stLine.classList.remove('st-ongoing', 'st-hiatus', 'st-completed');
+    stLine.classList.add('st-' + stKey);
+    const extra = [];
+    const genres = (ov && ov.genres && ov.genres.length) ? ov.genres : (d.genre || []).map(g=>g && g.nama).filter(Boolean);
+    if(genres.length) extra.push(['Genre', genres.map(g=>`<span class="info-chip">${mirEsc(g)}</span>`).join('')]);
+    const author = (ov && ov.author) || det.pengarang;
+    const artist = (ov && ov.artist) || det.ilustrator;
+    if(author) extra.push(['Penulis', `<span class="info-chip">${mirEsc(author)}</span>`]);
+    if(artist) extra.push(['Artis', `<span class="info-chip">${mirEsc(artist)}</span>`]);
+    paintRows(extra);
   }
 
   // ----- memuat judul Mirror (ringkas), di latar belakang -----
@@ -1961,8 +1991,13 @@
       const rows = [];
       const PAGE = 1000;
       for(let from = 0; ; from += PAGE){
-        const { data, error } = await sb.from('titles').select(MIRROR_COLS).eq('source', 'mirror')
+        let r = await sb.from('titles').select(MIRROR_COLS).eq('source', 'mirror').eq('mirror_hidden', false)
           .order('id', { ascending:true }).range(from, from + PAGE - 1);
+        if(r.error){   // kolom baru belum ada (SQL belum dijalankan ulang): pakai kolom lama
+          r = await sb.from('titles').select(MIRROR_COLS_BASE).eq('source', 'mirror')
+            .order('id', { ascending:true }).range(from, from + PAGE - 1);
+        }
+        const { data, error } = r;
         if(error){ console.warn('Judul Mirror belum bisa dimuat:', error.message); break; }
         rows.push(...(data || []));
         if(!data || data.length < PAGE) break;
@@ -2137,6 +2172,116 @@
   document.getElementById('mirSyncAllBtn').addEventListener('click', ()=>runMirrorSync(true));
   document.getElementById('mirStopBtn').addEventListener('click', ()=>{ mirStop = true; });
   document.getElementById('mirWipeBtn').addEventListener('click', runMirrorWipe);
+
+  // ----- admin: cari, edit, dan sembunyikan judul Mirror -----
+  let mirListFilter = 'all', mirListTimer = null;
+  const mirListEl = document.getElementById('mirEditList');
+  async function mirRenderList(){
+    const q = document.getElementById('mirEditSearch').value.trim();
+    if(!q && mirListFilter === 'all'){
+      mirListEl.innerHTML = '<div class="ch-pages" style="white-space:normal">Ketik judul untuk mencari, atau lihat daftar yang disembunyikan / sudah diedit.</div>';
+      return;
+    }
+    mirListEl.innerHTML = '<div class="ch-pages">Memuat…</div>';
+    let query = sb.from('titles').select('id,title,category,rating,mirror_hidden,mirror_edited').eq('source', 'mirror');
+    if(mirListFilter === 'hidden') query = query.eq('mirror_hidden', true);
+    if(mirListFilter === 'edited') query = query.eq('mirror_edited', true);
+    if(q) query = query.ilike('title', '%' + q.replace(/[%_,()]/g, ' ') + '%');
+    const { data, error } = await query.order('title').limit(25);
+    if(error){
+      mirListEl.innerHTML = `<div class="ch-pages" style="white-space:normal">Belum bisa memuat (jalankan mirror-source.sql terbaru di Supabase): ${mirEsc(error.message)}</div>`;
+      return;
+    }
+    if(!data.length){ mirListEl.innerHTML = '<div class="ch-pages">Tidak ada judul yang cocok.</div>'; return; }
+    mirListEl.innerHTML = data.map(r=>`
+      <div style="display:flex;gap:8px;align-items:center;padding:10px 0;border-top:1px solid var(--border)" data-mirid="${mirEsc(r.id)}">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${mirEsc(r.title)}</div>
+          <div class="ch-pages" style="white-space:normal">${mirEsc(r.category)}${r.rating ? ' · ★ ' + mirEsc(r.rating) : ''}${r.mirror_hidden ? ' · Disembunyikan' : ''}${r.mirror_edited ? ' · Diedit' : ''}</div>
+        </div>
+        <button type="button" class="admin-cancel" style="width:auto;margin:0;padding:8px 14px" data-mir="edit">Edit</button>
+        <button type="button" class="admin-cancel" style="width:auto;margin:0;padding:8px 14px" data-mir="hide" data-hide="${r.mirror_hidden ? '0' : '1'}">${r.mirror_hidden ? 'Tampilkan' : 'Sembunyikan'}</button>
+      </div>`).join('');
+  }
+  document.getElementById('mirEditSearch').addEventListener('input', ()=>{
+    clearTimeout(mirListTimer);
+    mirListTimer = setTimeout(mirRenderList, 350);
+  });
+  document.getElementById('mirEditFilters').addEventListener('click', e=>{
+    const b = e.target.closest('[data-mirf]');
+    if(!b) return;
+    mirListFilter = b.dataset.mirf;
+    document.querySelectorAll('#mirEditFilters .src-btn').forEach(x=>x.classList.toggle('active', x === b));
+    mirRenderList();
+  });
+  mirListEl.addEventListener('click', async e=>{
+    const btn = e.target.closest('[data-mir]');
+    const row = e.target.closest('[data-mirid]');
+    if(!btn || !row || !isAdmin()) return;
+    const id = row.dataset.mirid;
+    if(btn.dataset.mir === 'edit'){ startEditMirror(id); return; }
+    const hide = btn.dataset.hide === '1';
+    btn.disabled = true;
+    const { error } = await sb.from('titles').update({ mirror_hidden: hide }).eq('id', id);
+    if(error){ mirSay('Gagal: ' + error.message); btn.disabled = false; return; }
+    if(hide){
+      Object.keys(titles).forEach(cat=>{ titles[cat] = titles[cat].filter(x=>String(x.supabaseId) !== String(id)); });
+    }else{
+      const r = await sb.from('titles').select(MIRROR_COLS).eq('id', id).single();
+      if(r.data && titles[r.data.category]) titles[r.data.category].push(mapRowToItem(r.data));
+    }
+    refreshHomeLists();
+    mirRenderList();
+  });
+
+  async function startEditMirror(id){
+    const toast = document.getElementById('adminToast');
+    toast.textContent = 'Memuat data judul…'; toast.hidden = false;
+    const { data: row, error } = await sb.from('titles').select('*').eq('id', id).single();
+    if(error || !row){ toast.textContent = 'Gagal memuat judul: ' + (error ? error.message : 'tidak ditemukan'); return; }
+    const it = mapRowToItem(row);
+    const ov = row.mirror_override || {};
+    let live = null;
+    if(row.mirror_slug){ try{ live = await mirrorFetch('/?komik=' + encodeURIComponent(row.mirror_slug)); }catch(e){ live = null; } }
+    const det = (live && live.detail) || {};
+    const liveGenres = ((live && live.genre) || []).map(g=>g && g.nama).filter(Boolean);
+    const stLabel = k => k === 'completed' ? 'Completed' : k === 'hiatus' ? 'Hiatus' : 'Ongoing';
+    // nilai dari sumber dicatat; nanti hanya yang kamu ubah yang disimpan sebagai isian sendiri
+    const snap = {
+      synopsis: String((live && live.desk) || '').trim(),
+      author: det.pengarang || '',
+      artist: det.ilustrator || '',
+      genres: liveGenres.join('|'),
+      status: det.status ? stLabel(mirStatusKey(det.status)) : (row.status || 'Ongoing')
+    };
+    const genres = (ov.genres && ov.genres.length) ? ov.genres : liveGenres;
+    editingItem = { cat: row.category, id: row.id, mirror: true, snap };
+    document.getElementById('admTitle').value = it.t;
+    document.getElementById('admCoverFile').value = '';
+    document.getElementById('admCategory').value = row.category;
+    document.getElementById('admStatus').value = ov.status || snap.status;
+    document.getElementById('admGenre').value = genres[0] || '';
+    document.getElementById('admGenresExtra').value = genres.slice(1).join(', ');
+    document.getElementById('admAuthor').value = ov.author || snap.author;
+    document.getElementById('admRating').value = it.rating;
+    document.getElementById('admViews').value = '';
+    document.getElementById('admSynopsis').value = ov.synopsis || snap.synopsis;
+    document.getElementById('admArtist').value = ov.artist || snap.artist;
+    document.getElementById('admSeasonStarts').value = (it.seasonStarts || []).join(', ');
+    document.getElementById('admRecommended').checked = !!it.isRecommended;
+    document.getElementById('admFeatured').checked = !!it.isFeatured;
+    document.getElementById('admPopular').checked = !!it.isPopular;
+    document.getElementById('admAuthor').required = false;
+    document.getElementById('admGenre').required = false;
+    document.getElementById('admSubmitBtn').textContent = 'Simpan Perubahan';
+    document.getElementById('admCancelEdit').hidden = false;
+    document.getElementById('adminFormHeading').textContent = 'Edit judul Mirror';
+    showAdminTab('titles');
+    document.getElementById('adminFormCard').open = true;
+    toast.textContent = `Mengedit "${it.t}" (Mirror). Hanya isian yang kamu ubah yang disimpan; sisanya tetap mengikuti sumber.` + (live ? '' : ' Data sumber belum bisa dimuat sekarang.');
+    toast.hidden = false;
+    document.getElementById('adminFormCard').scrollIntoView({ behavior:'smooth', block:'start' });
+  }
   // =================== AKHIR MIRROR ===================
 
   async function updateTitleRemote(id, fields){
@@ -3636,7 +3781,7 @@
     document.getElementById('adminPaneInfo').hidden = name !== 'info';
     document.getElementById('adminPaneMirror').hidden = name !== 'mirror';
     if(name === 'info'){ populateInfoTitleSelect(); loadInfoAdmin(); }
-    if(name === 'mirror'){ refreshMirrorCount(); }
+    if(name === 'mirror'){ refreshMirrorCount(); mirRenderList(); }
     window.scrollTo(0,0);
   }
 
@@ -4862,12 +5007,16 @@
     document.getElementById('admCancelEdit').hidden = true;
     document.getElementById('adminFormHeading').textContent = '+ Tambah judul baru';
     document.getElementById('adminFormCard').open = false;
+    document.getElementById('admAuthor').required = true;
+    document.getElementById('admGenre').required = true;
   }
 
   function startEdit(cat, id){
     const it = titles[cat].find(x=>x.supabaseId === id);
     if(!it) return;
     editingItem = { cat, id };
+    document.getElementById('admAuthor').required = true;
+    document.getElementById('admGenre').required = true;
     document.getElementById('admTitle').value = it.t;
     document.getElementById('admCoverFile').value = '';
     document.getElementById('admCategory').value = cat;
@@ -4926,7 +5075,8 @@
     const isFeat = document.getElementById('admFeatured').checked;
     const isPop = document.getElementById('admPopular').checked;
 
-    if(!title || !mainGenre || !author){ return; }
+    const isMirrorEdit = !!(editingItem && editingItem.mirror);
+    if(!title || (!isMirrorEdit && (!mainGenre || !author))){ return; }
 
     const toast = document.getElementById('adminToast');
     toast.textContent = coverFile ? 'Mengunggah cover…' : 'Menyimpan…';
@@ -4957,10 +5107,33 @@
 
       if(editingItem){
         if(coverUrl) fields.cover_url = coverUrl;
+        if(editingItem.mirror){
+          // Mirror: judul, cover, tipe, rating disimpan biasa; sinopsis/genre/penulis/artis/status hanya
+          // disimpan (sebagai isian sendiri) kalau berbeda dari data sumber
+          const snap = editingItem.snap || {};
+          const same = (a, b)=>String(a || '').trim() === String(b || '').trim();
+          const ov = {};
+          if(synopsis && !same(synopsis, snap.synopsis)) ov.synopsis = synopsis;
+          if(author && !same(author, snap.author)) ov.author = author;
+          if(artist && !same(artist, snap.artist)) ov.artist = artist;
+          const gList = [mainGenre, ...extra].filter(Boolean);
+          if(gList.length && gList.join('|') !== snap.genres) ov.genres = gList;
+          if(status !== snap.status) ov.status = status;
+          fields.tag = 'Mirror';
+          fields.author = null;
+          fields.genres = [];
+          fields.synopsis = null;
+          delete fields.artist;
+          delete fields.views;
+          fields.mirror_override = Object.keys(ov).length ? ov : null;
+          fields.mirror_edited = Object.keys(ov).length > 0;
+        }
         const updated = await updateTitleRemote(editingItem.id, fields);
         const oldList = titles[editingItem.cat];
         const idx = oldList.findIndex(x=>x.supabaseId === editingItem.id);
-        if(editingItem.cat === category){
+        if(idx === -1){
+          if(!updated.mirrorHidden && titles[category]) titles[category].push(updated);
+        } else if(editingItem.cat === category){
           oldList[idx] = updated;
         } else {
           oldList.splice(idx,1);
@@ -4983,6 +5156,7 @@
       renderAdminList();
       populateAdminTitleSelect();
       refreshHomeLists();
+      if(!document.getElementById('adminPaneMirror').hidden) mirRenderList();
     }catch(err){
       toast.textContent = 'Gagal menyimpan: ' + friendlyError(err);
     }
