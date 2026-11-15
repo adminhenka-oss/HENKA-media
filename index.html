@@ -1829,6 +1829,14 @@
     return j.data;
   }
 
+  // baris chapter terbaru di kartu Update untuk judul Mirror (dari data tersimpan, tanpa memanggil web sumber)
+  function mirrorLatestRows(it){
+    const n = parseInt(String(it.ch).replace(/\D/g, ''), 10) || 0;
+    if(!n) return [];
+    const when = it.mirrorUpdatedAt ? relativeTime(new Date(it.mirrorUpdatedAt).toISOString()).replace(' yang lalu', ' lalu') : '';
+    return [{ num: n, when, at: it.mirrorUpdatedAt || 0 }];
+  }
+
   // "12 jam yang lalu" / "3 hari lalu" -> waktu (ms)
   function mirrorAgoToMs(text){
     const m = String(text || '').toLowerCase().match(/(\d+)\s*(detik|menit|jam|hari|minggu|bulan|tahun)/);
@@ -2383,7 +2391,8 @@
     await Promise.all(items.filter(it=>it.supabaseId).map(async it=>{
       const id = String(it.supabaseId);
       let rows = [];
-      try{ rows = await loadLatestChapters(id); }catch(e){ rows = []; }
+      if(it.source === 'mirror'){ rows = mirrorLatestRows(it); }
+      else{ try{ rows = await loadLatestChapters(id); }catch(e){ rows = []; } }
       const boxes = document.querySelectorAll('.upd-chs[data-updch="' + id + '"]');
       if(!boxes.length) return;
       const up = upChapterSet(rows);   // tanda UP: aturan sama dengan daftar chapter (3 terbaru, maks. UP_DAYS hari)
@@ -2394,7 +2403,7 @@
               <span class="upd-ch-num">Chapter ${r.num}</span>
               <span class="upd-ch-time">${r.when}</span>
             </div>`).join('')
-        : '<div class="upd-none">Belum ada chapter</div>';
+        : (it.source === 'mirror' ? '<div class="upd-none">Ketuk judul untuk melihat chapter</div>' : '<div class="upd-none">Belum ada chapter</div>');
       boxes.forEach(b=>{ b.innerHTML = html; });
     }));
   }
