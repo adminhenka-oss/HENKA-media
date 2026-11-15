@@ -1877,6 +1877,15 @@
     try{ return decodeURIComponent(m[1]); }catch(e){ return m[1]; }
   }
 
+  // Gambar iklan/banner yang ikut terambil dari sumber (biasanya GIF atau dari server gambar milik Google/Blogger)
+  // dibuang dari halaman chapter. Tambah pola di sini kalau ada iklan lain yang lolos.
+  const MIRROR_AD_PATTERNS = [/\.gif(\?|#|$)/i, /blogger\.googleusercontent\.com/i, /\/\/[^\/]*googleusercontent\.com/i];
+  function mirrorStripAds(urls){
+    const kept = urls.filter(u=>!MIRROR_AD_PATTERNS.some(re=>re.test(u)));
+    // jaga-jaga: kalau lebih dari separuh ikut terbuang, anggap polanya keliru dan tampilkan apa adanya
+    return kept.length * 2 >= urls.length ? kept : urls;
+  }
+
   const mirrorChLinks = new Map();   // "idJudul:nomor" -> "/slug-chapter-N/"
   async function buildMirrorChapters(item){
     const d = await mirrorFetch('/?komik=' + encodeURIComponent(item.mirrorSlug));
@@ -1900,7 +1909,7 @@
       if(!link){ await buildMirrorChapters(item); link = mirrorChLinks.get(key); }
       if(!link) return null;
       const d = await mirrorFetch('/?chapter=' + encodeURIComponent(link.replace(/^\/+|\/+$/g, '')));
-      const urls = (d.gambar || []).map(g=>g && g.url).filter(Boolean);
+      const urls = mirrorStripAds((d.gambar || []).map(g=>g && g.url).filter(Boolean));
       return urls.length ? urls : null;
     }catch(e){
       console.warn('Gambar Mirror gagal dimuat:', e.message || e);
