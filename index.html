@@ -1551,9 +1551,10 @@
       </div>
       <div class="admin-field">
         <label for="mirSyncPages">Jumlah halaman terbaru</label>
-        <input type="number" id="mirSyncPages" min="1" max="20" value="3" inputmode="numeric">
+        <input type="number" id="mirSyncPages" min="1" max="50" value="3" inputmode="numeric">
       </div>
       <button type="button" class="admin-submit" id="mirSyncBtn">Sinkron sekarang</button>
+      <button type="button" class="admin-cancel" id="mirSyncAllBtn">Sinkron semua halaman (±5 menit)</button>
     </div>
     <div style="border:1px solid var(--border);border-radius:14px;padding:14px;background:var(--bg-panel)">
       <div class="ch-pages" id="mirCount" style="white-space:normal">Memuat jumlah…</div>
@@ -1760,7 +1761,7 @@
       c: [row.color_1 || '#5b2a8c', row.color_2 || '#1c0e2e'],
       cover: proxyUrl(row.cover_url) || null,
       coverDirect: row.cover_url || null,
-      ch: `CH.${row.chapter_count}`,
+      ch: (row.source === 'mirror' && !row.chapter_count) ? '' : `CH.${row.chapter_count}`,
       views: row.views || '0',
       tag: row.tag,
       rating: row.rating,
@@ -1835,6 +1836,12 @@
     if(!n) return [];
     const when = it.mirrorUpdatedAt ? relativeTime(new Date(it.mirrorUpdatedAt).toISOString()).replace(' yang lalu', ' lalu') : '';
     return [{ num: n, when, at: it.mirrorUpdatedAt || 0 }];
+  }
+
+  // 2 chapter terbaru yang sebenarnya (diambil langsung dari Mirror, di-cache sebentar)
+  async function mirrorLatestRowsLive(it){
+    const list = await buildMirrorChapters(it);
+    return list.slice(0, 2).map(c=>({ num: c.num, when: c.date === 'Tersimpan' ? '' : c.date, at: c.at }));
   }
 
   // "12 jam yang lalu" / "3 hari lalu" -> waktu (ms)
@@ -2009,6 +2016,7 @@
   function mirPaintBtns(){
     document.getElementById('mirImportBtn').disabled = mirBusy;
     document.getElementById('mirSyncBtn').disabled = mirBusy;
+    document.getElementById('mirSyncAllBtn').disabled = mirBusy;
     document.getElementById('mirWipeBtn').disabled = mirBusy;
     document.getElementById('mirStopBtn').hidden = !mirBusy;
   }
@@ -2059,15 +2067,25 @@
     mirBusy = false; mirPaintBtns();
   }
 
-  async function runMirrorSync(){
+  async function mirrorFetchRetry(path, say){
+    let lastErr = null;
+    for(let attempt = 0; attempt < 3; attempt++){
+      try{ return await mirrorFetchFresh(path); }
+      catch(e){ lastErr = e; if(say) say(e.message || String(e)); await sleepMs(4000); }
+    }
+    throw lastErr || new Error('gagal');
+  }
+
+  async function runMirrorSync(all){
     if(mirBusy || !isAdmin()) return;
     mirBusy = true; mirStop = false; mirPaintBtns();
-    const pages = Math.min(20, Math.max(1, parseInt(document.getElementById('mirSyncPages').value, 10) || 3));
+    let pages = all === true ? 9999 : Math.min(50, Math.max(1, parseInt(document.getElementById('mirSyncPages').value, 10) || 3));
     let touched = 0;
     try{
       for(let p = 1; p <= pages && !mirStop; p++){
-        mirSay(`Sinkron halaman ${p} dari ${pages}…`);
-        const d = await mirrorFetchFresh('/?latest=' + p);
+        mirSay(`Sinkron halaman ${p} dari ${pages === 9999 ? '…' : pages} · ${touched} judul diperbarui`);
+        const d = await mirrorFetchRetry('/?latest=' + p, msg=>mirSay(`Halaman ${p}: mencoba lagi… (${msg})`));
+        if(p === 1 && all === true) pages = Math.max(1, Number(d.total_halaman) || 1);
         const items = d.komik || [];
         if(!items.length) break;
         await mirrorInsertNew(items.map((k, i)=>mirrorRowFromList(k, i)));
@@ -2083,8 +2101,16 @@
           if(at) patch.mirror_updated_at = new Date(at).toISOString();
           if(Object.keys(patch).length) ups.push({ slug, patch });
         });
-        for(let i = 0; i < ups.length; i += 6){
-          await Promise.all(ups.slice(i, i + 6).map(u=>sb.from('titles').update(u.patch).eq('mirror_slug', u.slug)));
+        // satu permintaan per halaman lewat fungsi SQL; kalau belum ada, perbarui satu per satu
+        const rpc = await sb.rpc('mirror_apply_updates', { items: ups.map(u=>({
+          slug: u.slug,
+          ch: u.patch.chapter_count == null ? null : u.patch.chapter_count,
+          at: u.patch.mirror_updated_at || null
+        })) });
+        if(rpc.error){
+          for(let i = 0; i < ups.length; i += 6){
+            await Promise.all(ups.slice(i, i + 6).map(u=>sb.from('titles').update(u.patch).eq('mirror_slug', u.slug)));
+          }
         }
         touched += ups.length;
         if(p < pages) await sleepMs(1300);
@@ -2107,7 +2133,8 @@
     mirBusy = false; mirPaintBtns();
   }
   document.getElementById('mirImportBtn').addEventListener('click', runMirrorImport);
-  document.getElementById('mirSyncBtn').addEventListener('click', runMirrorSync);
+  document.getElementById('mirSyncBtn').addEventListener('click', ()=>runMirrorSync(false));
+  document.getElementById('mirSyncAllBtn').addEventListener('click', ()=>runMirrorSync(true));
   document.getElementById('mirStopBtn').addEventListener('click', ()=>{ mirStop = true; });
   document.getElementById('mirWipeBtn').addEventListener('click', runMirrorWipe);
   // =================== AKHIR MIRROR ===================
@@ -2182,7 +2209,7 @@
           ${item.cover ? '' : `<span class="cover-title">${item.t}</span>`}
         </div>
         <div class="card-name"><span>${item.t}</span></div>
-        <div class="card-meta"><span>⊙ ${item.views}</span><span>${item.ch}</span></div>
+        <div class="card-meta"><span>${item.source === 'mirror' ? ((Number(item.rating) > 0) ? '★ ' + item.rating : '') : '⊙ ' + item.views}</span><span>${item.ch}</span></div>
       </div>`;
   }
 
@@ -2390,21 +2417,32 @@
   async function fillUpdateChapters(items){
     await Promise.all(items.filter(it=>it.supabaseId).map(async it=>{
       const id = String(it.supabaseId);
+      const paint = rows=>{
+        const boxes = document.querySelectorAll('.upd-chs[data-updch="' + id + '"]');
+        if(!boxes.length) return;
+        const up = upChapterSet(rows);   // tanda UP: aturan sama dengan daftar chapter (3 terbaru, maks. UP_DAYS hari)
+        const html = rows.length
+          ? rows.map(r=>`
+              <div class="upd-ch" data-title="${it.t}" data-chapter="${r.num}">
+                ${upBadgeHTML(r, up)}
+                <span class="upd-ch-num">Chapter ${r.num}</span>
+                <span class="upd-ch-time">${r.when}</span>
+              </div>`).join('')
+          : (it.source === 'mirror' ? '<div class="upd-none">Ketuk judul untuk melihat chapter</div>' : '<div class="upd-none">Belum ada chapter</div>');
+        boxes.forEach(b=>{ b.innerHTML = html; });
+      };
+      if(it.source === 'mirror'){
+        const stored = mirrorLatestRows(it);
+        if(stored.length) paint(stored);               // langsung tampil dari data tersimpan
+        try{
+          const live = await mirrorLatestRowsLive(it);   // lalu diganti 2 chapter terbaru yang sebenarnya
+          if(live.length) paint(live); else if(!stored.length) paint([]);
+        }catch(e){ if(!stored.length) paint([]); }
+        return;
+      }
       let rows = [];
-      if(it.source === 'mirror'){ rows = mirrorLatestRows(it); }
-      else{ try{ rows = await loadLatestChapters(id); }catch(e){ rows = []; } }
-      const boxes = document.querySelectorAll('.upd-chs[data-updch="' + id + '"]');
-      if(!boxes.length) return;
-      const up = upChapterSet(rows);   // tanda UP: aturan sama dengan daftar chapter (3 terbaru, maks. UP_DAYS hari)
-      const html = rows.length
-        ? rows.map(r=>`
-            <div class="upd-ch" data-title="${it.t}" data-chapter="${r.num}">
-              ${upBadgeHTML(r, up)}
-              <span class="upd-ch-num">Chapter ${r.num}</span>
-              <span class="upd-ch-time">${r.when}</span>
-            </div>`).join('')
-        : (it.source === 'mirror' ? '<div class="upd-none">Ketuk judul untuk melihat chapter</div>' : '<div class="upd-none">Belum ada chapter</div>');
-      boxes.forEach(b=>{ b.innerHTML = html; });
+      try{ rows = await loadLatestChapters(id); }catch(e){ rows = []; }
+      paint(rows);
     }));
   }
 
