@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
 <title>Henka — Beranda</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -246,6 +247,20 @@
     white-space:nowrap; flex-shrink:0;
   }
   .tab.active{
+    background: linear-gradient(135deg, var(--accent-deep), var(--accent));
+    color:#fff; border-color: transparent;
+    box-shadow: 0 6px 16px -6px rgba(124,58,237,0.6);
+  }
+
+  /* pilihan sumber judul: Project / Mirror */
+  .src-switch{ display:flex; gap:8px; margin:0 0 14px; }
+  .src-btn{
+    padding: 8px 18px; border-radius: var(--radius-pill);
+    border: 1px solid var(--border); background: var(--bg-panel);
+    color: var(--text-muted); font-size:0.85rem; font-weight:700; cursor:pointer;
+    white-space:nowrap; flex-shrink:0;
+  }
+  .src-btn.active{
     background: linear-gradient(135deg, var(--accent-deep), var(--accent));
     color:#fff; border-color: transparent;
     box-shadow: 0 6px 16px -6px rgba(124,58,237,0.6);
@@ -1193,6 +1208,7 @@
       <h2 class="section-title">Rekomendasi</h2>
       <a class="section-link" href="#" data-seeall="rec">Lihat semua</a>
     </div>
+    <div class="src-switch"></div>
     <div class="card-row" id="recRow"></div>
   </section>
 
@@ -1201,6 +1217,7 @@
       <h2 class="section-title">Update</h2>
       <a class="section-link" href="#" data-seeall="update">Lihat semua</a>
     </div>
+    <div class="src-switch"></div>
     <div class="grid grid-2" id="updateGrid"></div>
   </section>
 
@@ -1209,6 +1226,7 @@
       <h2 class="section-title">Populer</h2>
       <a class="section-link" href="#" data-seeall="populer">Lihat semua</a>
     </div>
+    <div class="src-switch"></div>
     <div class="card-row" id="populerRow"></div>
   </section>
 </main>
@@ -1359,6 +1377,7 @@
     <button type="button" class="admin-tab active" data-atab="titles">Judul</button>
     <button type="button" class="admin-tab" data-atab="chapters">Chapter</button>
     <button type="button" class="admin-tab" data-atab="info">Info Komik</button>
+    <button type="button" class="admin-tab" data-atab="mirror">Mirror</button>
   </div>
 
   <section class="admin-pane" id="adminPaneTitles">
@@ -1509,6 +1528,37 @@
     <input type="search" class="admin-search" id="chapterSearch" placeholder="Cari judul…">
     <div id="chapterImageList"></div>
     <button type="button" class="admin-more" id="chapterMore" hidden></button>
+  </section>
+
+  <section class="admin-pane" id="adminPaneMirror" hidden>
+    <div style="border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px;background:var(--bg-panel)">
+      <div class="admin-field">
+        <label>Impor katalog Mirror</label>
+        <div class="ch-pages" style="margin:4px 0 12px;line-height:1.5;white-space:normal">Menyimpan data ringan tiap judul (judul, cover, tipe, rating). Sinopsis, chapter, dan gambar tidak disimpan; semuanya diambil langsung saat dibaca. Aman dijalankan ulang: judul yang sudah ada dilewati.</div>
+      </div>
+      <div class="admin-field">
+        <label for="mirStartPage">Mulai dari halaman</label>
+        <input type="number" id="mirStartPage" min="1" value="1" inputmode="numeric">
+      </div>
+      <button type="button" class="admin-submit" id="mirImportBtn">Mulai impor katalog</button>
+      <button type="button" class="admin-cancel" id="mirStopBtn" hidden>Berhenti</button>
+      <div class="admin-toast" id="mirStatus" hidden></div>
+    </div>
+    <div style="border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px;background:var(--bg-panel)">
+      <div class="admin-field">
+        <label>Sinkron update terbaru</label>
+        <div class="ch-pages" style="margin:4px 0 12px;line-height:1.5;white-space:normal">Menambah judul baru dan memperbarui chapter terbaru serta waktu update, supaya urutan “Update” benar.</div>
+      </div>
+      <div class="admin-field">
+        <label for="mirSyncPages">Jumlah halaman terbaru</label>
+        <input type="number" id="mirSyncPages" min="1" max="20" value="3" inputmode="numeric">
+      </div>
+      <button type="button" class="admin-submit" id="mirSyncBtn">Sinkron sekarang</button>
+    </div>
+    <div style="border:1px solid var(--border);border-radius:14px;padding:14px;background:var(--bg-panel)">
+      <div class="ch-pages" id="mirCount" style="white-space:normal">Memuat jumlah…</div>
+      <button type="button" class="admin-cancel" id="mirWipeBtn" style="margin-top:10px">Hapus semua judul Mirror</button>
+    </div>
   </section>
 
   <section class="admin-pane" id="adminPaneInfo" hidden>
@@ -1718,7 +1768,7 @@
       author: row.author,
       genres: row.genres || [],
       category: row.category || null,
-      createdAt: row.created_at ? (Date.parse(row.created_at) || 0) : 0,
+      createdAt: (row.source === 'mirror') ? 0 : (row.created_at ? (Date.parse(row.created_at) || 0) : 0),
       seq: ++titleSeq,
       synopsis: row.synopsis || '',
       artist: row.artist || '',
@@ -1726,12 +1776,20 @@
       isRecommended: !!row.is_recommended,
       isFeatured: !!row.is_featured,
       isPopular: !!row.is_popular,
+      source: row.source === 'mirror' ? 'mirror' : 'project',
+      mirrorSlug: row.mirror_slug || null,
+      mirrorUpdatedAt: row.mirror_updated_at ? (Date.parse(row.mirror_updated_at) || 0) : 0,
       isCustom: true
     };
   }
 
   async function loadCustomTitles(){
-    const { data, error } = await sb.from('titles').select('*').order('created_at', { ascending:true });
+    // judul Project (milik sendiri) dimuat penuh; judul Mirror dimuat terpisah (ringkas)
+    let { data, error } = await sb.from('titles').select('*').neq('source', 'mirror').order('created_at', { ascending:true });
+    if(error){
+      // kolom "source" belum ada (SQL belum dijalankan): muat semua seperti sebelumnya
+      ({ data, error } = await sb.from('titles').select('*').order('created_at', { ascending:true }));
+    }
     if(error){ console.error('Gagal memuat data dari Supabase:', error.message); return; }
     data.forEach(row=>{
       if(titles[row.category]) titles[row.category].push(mapRowToItem(row));
@@ -1743,6 +1801,308 @@
     if(error) throw error;
     return mapRowToItem(data);
   }
+
+
+  // ===================== MIRROR =====================
+  // Judul Mirror: hanya data ringan yang disimpan (judul, slug, cover). Sinopsis, daftar chapter, dan gambar
+  // diambil langsung dari henka-mirror saat dibuka, tidak disalin ke server Henka.
+  const MIRROR_API = 'https://henka-mirror.vercel.app';
+  const MIRROR_CREDIT = { name: 'Mirror', url: '' };   // isi nama dan alamat web sumber di sini kalau ingin dicantumkan sebagai "Sumber"
+  const MIRROR_COLS = 'id,category,title,cover_url,rating,status,chapter_count,tag,views,color_1,color_2,source,mirror_slug,mirror_updated_at,genres,author';
+  const mirEsc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const sleepMs = ms => new Promise(r=>setTimeout(r, ms));
+
+  const mirrorCache = new Map();
+  function mirrorFetch(path){
+    const hit = mirrorCache.get(path);
+    if(hit && Date.now() - hit.at < 120000) return hit.p;
+    const p = mirrorFetchFresh(path);
+    mirrorCache.set(path, { at: Date.now(), p });
+    p.catch(()=>mirrorCache.delete(path));
+    return p;
+  }
+  async function mirrorFetchFresh(path){
+    const r = await fetch(MIRROR_API + path);
+    if(!r.ok) throw new Error('Mirror HTTP ' + r.status);
+    const j = await r.json();
+    if(!j || j.status !== true) throw new Error((j && j.message) || 'Mirror gagal');
+    return j.data;
+  }
+
+  // "12 jam yang lalu" / "3 hari lalu" -> waktu (ms)
+  function mirrorAgoToMs(text){
+    const m = String(text || '').toLowerCase().match(/(\d+)\s*(detik|menit|jam|hari|minggu|bulan|tahun)/);
+    if(!m) return 0;
+    const unit = { detik:1, menit:60, jam:3600, hari:86400, minggu:604800, bulan:2592000, tahun:31536000 }[m[2]];
+    return Date.now() - Number(m[1]) * unit * 1000;
+  }
+  function mirrorChapterNum(label){
+    const m = String(label || '').match(/(\d+(?:\.\d+)?)/);
+    return m ? Number(m[1]) : null;
+  }
+  function mirrorSlugFromLink(link){
+    const m = String(link || '').match(/\/komik\/([^\/?#]+)/);
+    if(!m) return '';
+    try{ return decodeURIComponent(m[1]); }catch(e){ return m[1]; }
+  }
+
+  const mirrorChLinks = new Map();   // "idJudul:nomor" -> "/slug-chapter-N/"
+  async function buildMirrorChapters(item){
+    const d = await mirrorFetch('/?komik=' + encodeURIComponent(item.mirrorSlug));
+    const seen = new Set();
+    const out = [];
+    (d.daftar_chapter || []).forEach(c=>{
+      let num = mirrorChapterNum(c.judul_chapter);
+      if(num === null) num = mirrorChapterNum(String(c.link_chapter || '').replace(/^.*chapter-/, ''));
+      if(num === null || seen.has(num)) return;
+      seen.add(num);
+      mirrorChLinks.set(item.supabaseId + ':' + num, c.link_chapter);
+      out.push({ num, date: (c.waktu_rilis || '').replace(/\s+yang\s+/, ' ') || 'Tersimpan', at: mirrorAgoToMs(c.waktu_rilis) });
+    });
+    out.sort((a, b)=>b.num - a.num);
+    return out;
+  }
+  async function getMirrorChapterImages(item, num){
+    try{
+      const key = item.supabaseId + ':' + Number(num);
+      let link = mirrorChLinks.get(key);
+      if(!link){ await buildMirrorChapters(item); link = mirrorChLinks.get(key); }
+      if(!link) return null;
+      const d = await mirrorFetch('/?chapter=' + encodeURIComponent(link.replace(/^\/+|\/+$/g, '')));
+      const urls = (d.gambar || []).map(g=>g && g.url).filter(Boolean);
+      return urls.length ? urls : null;
+    }catch(e){
+      console.warn('Gambar Mirror gagal dimuat:', e.message || e);
+      return null;
+    }
+  }
+
+  function mirStatusKey(s){
+    s = String(s || '').toLowerCase();
+    if(/tamat|complete|selesai/.test(s)) return 'completed';
+    if(/hiatus/.test(s)) return 'hiatus';
+    return 'ongoing';
+  }
+  async function paintMirrorDetail(item, token){
+    const alive = ()=> token === detailLoadToken && currentDetailTitle === item.t;
+    const synEl = document.getElementById('detailSynopsis');
+    synEl.textContent = 'Memuat sinopsis…';
+    const credit = MIRROR_CREDIT.url
+      ? `<a class="info-chip" href="${mirEsc(MIRROR_CREDIT.url)}" target="_blank" rel="noopener noreferrer nofollow">${mirEsc(MIRROR_CREDIT.name)}</a>`
+      : `<span class="info-chip">${mirEsc(MIRROR_CREDIT.name)}</span>`;
+    const fmt = categoryOf(item);
+    const paintRows = extra=>{
+      const rows = [...extra];
+      if(fmt) rows.push(['Format', `<span class="info-chip">${mirEsc(fmt)}</span>`]);
+      rows.push(['Sumber', credit]);
+      document.getElementById('detailInfo').innerHTML = rows.map(([label, chips])=>`
+        <div class="info-row"><div class="info-label">${label}</div><div class="info-vals">${chips}</div></div>`).join('');
+    };
+    paintRows([]);
+    try{
+      const d = await mirrorFetch('/?komik=' + encodeURIComponent(item.mirrorSlug));
+      if(!alive()) return;
+      const det = d.detail || {};
+      const syn = String(d.desk || '').replace(/\r/g, '').trim().replace(/\n{3,}/g, '\n\n');
+      synEl.textContent = syn || 'Belum ada sinopsis.';
+      synEl.classList.add('clamped');
+      document.getElementById('synopsisToggle').textContent = 'Selengkapnya ⌄';
+      fitSynopsis();
+      const stKey = mirStatusKey(det.status);
+      document.getElementById('detailStatus').textContent = stKey === 'ongoing' ? 'Ongoing' : stKey === 'hiatus' ? 'Hiatus' : 'Completed';
+      const stLine = document.querySelector('.status-line');
+      stLine.classList.remove('st-ongoing', 'st-hiatus', 'st-completed');
+      stLine.classList.add('st-' + stKey);
+      const extra = [];
+      const genres = (d.genre || []).map(g=>g && g.nama).filter(Boolean);
+      if(genres.length) extra.push(['Genre', genres.map(g=>`<span class="info-chip">${mirEsc(g)}</span>`).join('')]);
+      if(det.pengarang) extra.push(['Penulis', `<span class="info-chip">${mirEsc(det.pengarang)}</span>`]);
+      if(det.ilustrator) extra.push(['Artis', `<span class="info-chip">${mirEsc(det.ilustrator)}</span>`]);
+      paintRows(extra);
+    }catch(e){
+      if(!alive()) return;
+      synEl.textContent = 'Info judul belum bisa dimuat dari Mirror. Coba lagi nanti.';
+    }
+  }
+
+  // ----- memuat judul Mirror (ringkas), di latar belakang -----
+  let mirrorLoadPromise = null;
+  function markMirrorTop(){
+    Object.keys(titles).forEach(cat=>{
+      const arr = titles[cat].filter(x=>x.source === 'mirror').sort((a, b)=>(Number(b.rating) || 0) - (Number(a.rating) || 0));
+      arr.slice(0, 20).forEach(x=>{ x.isPopular = true; });
+      arr.slice(0, 12).forEach(x=>{ x.isRecommended = true; });
+    });
+  }
+  function removeMirrorFromMemory(){
+    Object.keys(titles).forEach(cat=>{
+      const a = titles[cat];
+      for(let i = a.length - 1; i >= 0; i--){ if(a[i].source === 'mirror') a.splice(i, 1); }
+    });
+  }
+  function loadMirrorTitles(force){
+    if(mirrorLoadPromise && !force) return mirrorLoadPromise;
+    mirrorLoadPromise = (async ()=>{
+      const rows = [];
+      const PAGE = 1000;
+      for(let from = 0; ; from += PAGE){
+        const { data, error } = await sb.from('titles').select(MIRROR_COLS).eq('source', 'mirror')
+          .order('id', { ascending:true }).range(from, from + PAGE - 1);
+        if(error){ console.warn('Judul Mirror belum bisa dimuat:', error.message); break; }
+        rows.push(...(data || []));
+        if(!data || data.length < PAGE) break;
+      }
+      removeMirrorFromMemory();
+      rows.forEach(row=>{ if(titles[row.category]) titles[row.category].push(mapRowToItem(row)); });
+      markMirrorTop();
+      return rows.length;
+    })();
+    return mirrorLoadPromise;
+  }
+
+  // ----- admin: impor katalog + sinkron update -----
+  const MIRROR_TYPES = { manga:'Manga', manhwa:'Manhwa', manhua:'Manhua' };
+  function mirrorRowFromList(k, idx){
+    const slug = mirrorSlugFromLink(k.link);
+    if(!slug) return null;
+    let title = String(k.judul || '').replace(/\s+/g, ' ').trim().replace(/^Komik\s+/i, '');
+    if(!title || title === 'Tidak ada judul') title = slug.replace(/^\d+-/, '').replace(/-/g, ' ').replace(/\b\w/g, c=>c.toUpperCase());
+    const cat = MIRROR_TYPES[String(k.tipe || '').toLowerCase()] || (String(k.warna || '') === 'Hitam' ? 'Manga' : 'Manhwa');
+    const palette = coverPalette[idx % coverPalette.length];
+    const rating = Math.min(9.9, Math.max(0, Math.round((parseFloat(k.rating) || 0) * 10) / 10));
+    return {
+      category: cat, title, views: '0', tag: 'Mirror', rating, status: 'Ongoing', author: null,
+      genres: [], synopsis: null, is_recommended: false, is_popular: false,
+      cover_url: k.gambar || null, chapter_count: 0,
+      color_1: palette[0], color_2: palette[1],
+      source: 'mirror', mirror_slug: slug
+    };
+  }
+  // simpan baris baru saja (yang sudah ada dilewati); kalau satu batch gagal, coba satu per satu
+  async function mirrorInsertNew(rows){
+    const seen = new Set();
+    rows = rows.filter(r=>r && !seen.has(r.mirror_slug) && seen.add(r.mirror_slug));
+    if(!rows.length) return { ok: 0, fail: 0 };
+    const opt = { onConflict: 'mirror_slug', ignoreDuplicates: true };
+    const { error } = await sb.from('titles').upsert(rows, opt);
+    if(!error) return { ok: rows.length, fail: 0 };
+    let ok = 0, fail = 0, lastErr = error.message;
+    for(const r of rows){
+      const one = await sb.from('titles').upsert([r], opt);
+      if(one.error){ fail++; lastErr = one.error.message; } else ok++;
+    }
+    if(ok === 0) throw new Error(lastErr);
+    return { ok, fail };
+  }
+
+  const mirStatusEl = document.getElementById('mirStatus');
+  function mirSay(text){ mirStatusEl.textContent = text; mirStatusEl.hidden = false; }
+  let mirBusy = false, mirStop = false;
+  function mirPaintBtns(){
+    document.getElementById('mirImportBtn').disabled = mirBusy;
+    document.getElementById('mirSyncBtn').disabled = mirBusy;
+    document.getElementById('mirWipeBtn').disabled = mirBusy;
+    document.getElementById('mirStopBtn').hidden = !mirBusy;
+  }
+  async function refreshMirrorCount(){
+    const el = document.getElementById('mirCount');
+    const { count, error } = await sb.from('titles').select('id', { count:'exact', head:true }).eq('source', 'mirror');
+    el.textContent = error
+      ? 'Jumlah belum bisa dihitung (jalankan mirror-source.sql di Supabase dulu).'
+      : `Judul Mirror tersimpan: ${count || 0}`;
+  }
+  async function afterMirrorWrite(){
+    await loadMirrorTitles(true);
+    refreshHomeLists();
+    refreshMirrorCount();
+  }
+
+  async function runMirrorImport(){
+    if(mirBusy || !isAdmin()) return;
+    mirBusy = true; mirStop = false; mirPaintBtns();
+    let page = Math.max(1, parseInt(document.getElementById('mirStartPage').value, 10) || 1);
+    let total = null, saved = 0, skipped = 0;
+    try{
+      while(!mirStop){
+        let d = null, lastErr = null;
+        for(let attempt = 0; attempt < 3 && !d && !mirStop; attempt++){
+          try{ d = await mirrorFetchFresh('/?daftar=' + page); }
+          catch(e){ lastErr = e; mirSay(`Halaman ${page}: mencoba lagi… (${e.message || e})`); await sleepMs(4000); }
+        }
+        if(!d){ throw new Error(lastErr ? (lastErr.message || String(lastErr)) : 'dihentikan'); }
+        if(total === null) total = Number(d.total_halaman) || page;
+        const list = d.komik || [];
+        if(!list.length) break;
+        const res = await mirrorInsertNew(list.map((k, i)=>mirrorRowFromList(k, saved + i)));
+        saved += res.ok; skipped += res.fail;
+        document.getElementById('mirStartPage').value = page + 1;
+        mirSay(`Halaman ${page} dari ${total} · ${saved} judul diproses${skipped ? ' · ' + skipped + ' dilewati' : ''}`);
+        page++;
+        if(page > total) break;
+        await sleepMs(1300);
+      }
+      mirSay((mirStop ? 'Dihentikan di halaman ' + page : 'Selesai') + ` · ${saved} judul diproses${skipped ? ' · ' + skipped + ' dilewati' : ''}. Menyegarkan daftar…`);
+      await afterMirrorWrite();
+      mirSay(mirStatusEl.textContent.replace(' Menyegarkan daftar…', ''));
+    }catch(err){
+      mirSay('Berhenti di halaman ' + page + ': ' + (err.message || err) + '. Ketuk Mulai lagi untuk melanjutkan dari halaman ini.');
+      document.getElementById('mirStartPage').value = page;
+    }
+    mirBusy = false; mirPaintBtns();
+  }
+
+  async function runMirrorSync(){
+    if(mirBusy || !isAdmin()) return;
+    mirBusy = true; mirStop = false; mirPaintBtns();
+    const pages = Math.min(20, Math.max(1, parseInt(document.getElementById('mirSyncPages').value, 10) || 3));
+    let touched = 0;
+    try{
+      for(let p = 1; p <= pages && !mirStop; p++){
+        mirSay(`Sinkron halaman ${p} dari ${pages}…`);
+        const d = await mirrorFetchFresh('/?latest=' + p);
+        const items = d.komik || [];
+        if(!items.length) break;
+        await mirrorInsertNew(items.map((k, i)=>mirrorRowFromList(k, i)));
+        const ups = [];
+        items.forEach(k=>{
+          const slug = mirrorSlugFromLink(k.link);
+          const ch = (k.chapter && k.chapter[0]) || null;
+          if(!slug || !ch) return;
+          const num = mirrorChapterNum(ch.judul);
+          const at = mirrorAgoToMs(ch.tanggal_rilis);
+          const patch = {};
+          if(num !== null) patch.chapter_count = Math.floor(num);
+          if(at) patch.mirror_updated_at = new Date(at).toISOString();
+          if(Object.keys(patch).length) ups.push({ slug, patch });
+        });
+        for(let i = 0; i < ups.length; i += 6){
+          await Promise.all(ups.slice(i, i + 6).map(u=>sb.from('titles').update(u.patch).eq('mirror_slug', u.slug)));
+        }
+        touched += ups.length;
+        if(p < pages) await sleepMs(1300);
+      }
+      await afterMirrorWrite();
+      mirSay(`Sinkron selesai · ${touched} judul diperbarui.`);
+    }catch(err){
+      mirSay('Sinkron gagal: ' + (err.message || err));
+    }
+    mirBusy = false; mirPaintBtns();
+  }
+
+  async function runMirrorWipe(){
+    if(mirBusy || !isAdmin()) return;
+    if(!confirm('Hapus SEMUA judul Mirror dari Henka? Judul Project tidak terpengaruh.')) return;
+    mirBusy = true; mirPaintBtns();
+    const { error } = await sb.from('titles').delete().eq('source', 'mirror');
+    mirSay(error ? 'Gagal menghapus: ' + error.message : 'Semua judul Mirror sudah dihapus.');
+    if(!error) await afterMirrorWrite();
+    mirBusy = false; mirPaintBtns();
+  }
+  document.getElementById('mirImportBtn').addEventListener('click', runMirrorImport);
+  document.getElementById('mirSyncBtn').addEventListener('click', runMirrorSync);
+  document.getElementById('mirStopBtn').addEventListener('click', ()=>{ mirStop = true; });
+  document.getElementById('mirWipeBtn').addEventListener('click', runMirrorWipe);
+  // =================== AKHIR MIRROR ===================
 
   async function updateTitleRemote(id, fields){
     const { data, error } = await sb.from('titles').update(fields).eq('id', id).select().single();
@@ -1822,16 +2182,19 @@
   const activityMap = new Map();      // idJudul -> waktu chapter terbaru (ms)
   const freshMap = new Map();         // idJudul -> waktu chapter terbaru versi tampilan (updated_at || created_at), untuk tanda UP
   // Tanda di cover: judul yang baru ditambahkan = NEW selama NEW_DAYS hari; setelah itu, kalau masih ada chapter baru = UP
-  const titleIsNew = it => !!it.createdAt && (Date.now() - it.createdAt) < NEW_DAYS * 86400000;
+  const titleIsNew = it => it.source !== 'mirror' && !!it.createdAt && (Date.now() - it.createdAt) < NEW_DAYS * 86400000;
   const coverTagHTML = it => titleIsNew(it) ? '<span class="up-badge on-cover">NEW</span>'
     : (titleFresh(it) ? '<span class="up-badge on-cover">UP</span>' : '');
-  const titleFresh = it => (Date.now() - (freshMap.get(String(it.supabaseId)) || 0)) < UP_DAYS * 86400000;
+  const titleFresh = it => it.source === 'mirror'
+    ? (!!it.mirrorUpdatedAt && (Date.now() - it.mirrorUpdatedAt) < UP_DAYS * 86400000)
+    : (Date.now() - (freshMap.get(String(it.supabaseId)) || 0)) < UP_DAYS * 86400000;
   let activityAt = 0;
   let activityLoading = null;
 
   function invalidateActivity(){ activityAt = 0; }
 
   function titleActivity(it){
+    if(it.source === 'mirror') return it.mirrorUpdatedAt || 0;
     return Math.max(activityMap.get(String(it.supabaseId)) || 0, it.createdAt || 0);
   }
   function sortByActivity(list){
@@ -1903,6 +2266,34 @@
       `</div>`;
   }
   const listToolbarHTML = label => `<div class="list-toolbar"><span class="lt-label">${label}</span>${viewSwitchHTML()}</div>`;
+
+  // ===== Sumber judul: Project (milik sendiri) atau Mirror =====
+  const SRC_KEY = 'henka_source_mode';
+  let sourceMode = (()=>{ try{ return localStorage.getItem(SRC_KEY) === 'mirror' ? 'mirror' : 'project'; }catch(e){ return 'project'; } })();
+  const bySource = list => list.filter(it=>(it.source === 'mirror') === (sourceMode === 'mirror'));
+  const sourceBtnsHTML = ()=> [['project','Project'],['mirror','Mirror']].map(([k,l])=>
+    `<button type="button" class="src-btn ${sourceMode === k ? 'active' : ''}" data-src="${k}" aria-pressed="${sourceMode === k}">${l}</button>`).join('');
+  const sourceSwitchHTML = ()=> `<div class="src-switch" role="group" aria-label="Sumber judul">${sourceBtnsHTML()}</div>`;
+  const mirTxt = ()=> sourceMode === 'mirror' ? 'Mirror ' : '';
+
+  function setSourceMode(m){
+    if(m === sourceMode) return;
+    sourceMode = m;
+    try{ localStorage.setItem(SRC_KEY, m); }catch(e){}
+    if(!document.getElementById('searchView').hidden){
+      searchUpdatePage = 1;
+      runSearch(document.getElementById('searchOverlayInput').value);
+    }else if(!document.getElementById('seeAllView').hidden){
+      renderSeeAllList();
+    }else{
+      const g = document.querySelector('#genreTabs .tab.active')?.dataset.genre;
+      if(g) selectGenre(g);
+    }
+  }
+  document.addEventListener('click', e=>{
+    const b = e.target.closest('.src-switch button[data-src]');
+    if(b) setSourceMode(b.dataset.src);
+  });
 
   function statusKeyOf(item){ return item.status === 'Ongoing' ? 'ongoing' : item.status === 'Hiatus' ? 'hiatus' : 'completed'; }
 
@@ -2009,13 +2400,15 @@
   }
 
   function selectGenre(genre){
-    const rec = titles[genre].filter(it=>it.isRecommended);
+    document.querySelectorAll('main .src-switch').forEach(el=>{ el.innerHTML = sourceBtnsHTML(); });
+    const pool = bySource(titles[genre]);
+    const rec = pool.filter(it=>it.isRecommended);
     const UPDATE_HOME_LIMIT = 6;   // 3 baris x 2 kolom di beranda; sisanya lewat "Lihat semua"
-    const upd = sortByActivity(titles[genre]).slice(0, UPDATE_HOME_LIMIT);
+    const upd = sortByActivity(pool).slice(0, UPDATE_HOME_LIMIT);
     document.getElementById('recRow').innerHTML =
-      rec.map((it,i)=>cardHTML(it, i===0)).join('') || `<div class="empty-note">Belum ada rekomendasi di ${genre}.</div>`;
+      rec.map((it,i)=>cardHTML(it, i===0)).join('') || `<div class="empty-note">Belum ada rekomendasi ${mirTxt()}di ${genre}.</div>`;
     document.getElementById('updateGrid').innerHTML =
-      upd.map(it=>cardUpdateHTML(it)).join('') || `<div class="empty-note">Belum ada judul di ${genre}.</div>`;
+      upd.map(it=>cardUpdateHTML(it)).join('') || `<div class="empty-note">Belum ada judul ${mirTxt()}di ${genre}.</div>`;
     fillUpdateChapters(upd);
     loadActivity().then(changed=>{
       const cur = document.querySelector('#genreTabs .tab.active')?.dataset.genre;
@@ -2101,7 +2494,7 @@
   let featItems = [], featIndex = 0, featTimer = null;
 
   function featuredItems(){
-    const all = [...titles.Manhwa, ...titles.Manga, ...titles.Manhua];
+    const all = [...titles.Manhwa, ...titles.Manga, ...titles.Manhua].filter(it=>it.source !== 'mirror');
     let list = all.filter(it=>it.isFeatured);
     if(list.length === 0) list = all.filter(it=>it.isRecommended);   // belum ada yang ditandai Banner: pakai Rekomendasi
     list.sort((a,b)=>((b.createdAt || 0) - (a.createdAt || 0)) || (b.seq - a.seq));
@@ -2216,9 +2609,9 @@
   }
 
   function renderPopuler(genre){
-    const pop = titles[genre].filter(it=>it.isPopular);
+    const pop = bySource(titles[genre]).filter(it=>it.isPopular);
     document.getElementById('populerRow').innerHTML =
-      pop.map(item=>cardHTML(item,false)).join('') || `<div class="empty-note">Belum ada judul populer di ${genre}.</div>`;
+      pop.map(item=>cardHTML(item,false)).join('') || `<div class="empty-note">Belum ada judul populer ${mirTxt()}di ${genre}.</div>`;
   }
 
   function buildSynopsis(item){
@@ -2261,6 +2654,10 @@
   }
 
   async function buildChaptersRemote(item){
+    if(item.source === 'mirror'){
+      try{ return await buildMirrorChapters(item); }
+      catch(e){ console.warn('Chapter Mirror gagal dimuat:', e.message || e); return []; }
+    }
     const query = cols => sb.from('chapters').select(cols)
       .eq('title_id', item.supabaseId)
       .order('chapter_num', { ascending:false });
@@ -2651,6 +3048,8 @@
 
     if(!item.supabaseId){ finish(buildChapters(item)); showDetailView(); return; }
 
+    if(item.source === 'mirror'){ paintMirrorDetail(item, token); }
+
     const key = String(item.supabaseId);
     const loading = buildChaptersRemote(item);
     detailChaptersReady = loading;
@@ -2763,13 +3162,14 @@
 
   function renderSeeAllList(){
     const { kind, genre } = seeAllState;
-    let list = titles[genre].filter(it=>it.isRecommended);
-    if(kind === 'update') list = sortByActivity(titles[genre]);
-    if(kind === 'populer') list = titles[genre].filter(it=>it.isPopular);
+    const pool = bySource(titles[genre]);
+    let list = pool.filter(it=>it.isRecommended);
+    if(kind === 'update') list = sortByActivity(pool);
+    if(kind === 'populer') list = pool.filter(it=>it.isPopular);
     const wrap = document.getElementById('seeAllWrap');
-    wrap.innerHTML = list.length
+    wrap.innerHTML = sourceSwitchHTML() + (list.length
       ? titleListHTML(list, kind === 'update')
-      : `<div class="koleksi-empty">Belum ada judul di ${genre}.</div>`;
+      : `<div class="koleksi-empty">Belum ada judul ${mirTxt()}di ${genre}.</div>`);
     afterTitleList(wrap);
   }
 
@@ -3091,7 +3491,7 @@
     const q = (document.getElementById('adminSearch').value || '').trim();
     const match = makeMatcher(q);
     let all = [];
-    Object.keys(titles).forEach(cat=>titles[cat].forEach(it=>{ if(it.isCustom) all.push({ cat, it }); }));
+    Object.keys(titles).forEach(cat=>titles[cat].forEach(it=>{ if(it.isCustom && it.source !== 'mirror') all.push({ cat, it }); }));
     const total = all.length;
     if(adminState.cat !== 'all') all = all.filter(x=>x.cat === adminState.cat);
     if(q) all = all.filter(x=>match(x.it.t) || match(x.it.author || ''));
@@ -3187,11 +3587,14 @@
     document.getElementById('adminPaneTitles').hidden = name !== 'titles';
     document.getElementById('adminPaneChapters').hidden = name !== 'chapters';
     document.getElementById('adminPaneInfo').hidden = name !== 'info';
+    document.getElementById('adminPaneMirror').hidden = name !== 'mirror';
     if(name === 'info'){ populateInfoTitleSelect(); loadInfoAdmin(); }
+    if(name === 'mirror'){ refreshMirrorCount(); }
     window.scrollTo(0,0);
   }
 
   async function getChapterImagesRemote(item, num){
+    if(item.source === 'mirror') return getMirrorChapterImages(item, num);
     const { data, error } = await sb
       .from('chapters')
       .select('image_urls')
@@ -3255,7 +3658,7 @@
   }
 
   function populateAdminTitleSelect(){
-    const dbTitles = allTitles().filter(it=>it.supabaseId).sort((a,b)=>a.t.localeCompare(b.t));
+    const dbTitles = allTitles().filter(it=>it.supabaseId && it.source !== 'mirror').sort((a,b)=>a.t.localeCompare(b.t));
     const select = document.getElementById('chImgTitle');
     const q = (document.getElementById('chImgTitleSearch').value || '').trim();
     const match = makeMatcher(q);
@@ -3283,7 +3686,7 @@
   function chapterTitleList(){
     const q = (document.getElementById('chapterSearch').value || '').trim();
     const match = makeMatcher(q);
-    const all = allTitles().filter(it=>it.supabaseId).sort((a,b)=>a.t.localeCompare(b.t));
+    const all = allTitles().filter(it=>it.supabaseId && it.source !== 'mirror').sort((a,b)=>a.t.localeCompare(b.t));
     return { all: q ? all.filter(it=>match(it.t)) : all, total: all.length };
   }
 
@@ -4314,7 +4717,7 @@
     const images = (item && item.supabaseId) ? await getChapterImagesRemote(item, num) : null;
     if(Number(num) !== readerNum) return;   // pembaca sudah pindah chapter
     if(images && images.length){
-      pagesWrap.innerHTML = images.map(url=>`<img src="${proxyUrl(url)}" data-direct="${url}" loading="lazy" decoding="async" alt="Halaman ${title} Chapter ${num}">`).join('');
+      pagesWrap.innerHTML = images.map(url=>`<img src="${proxyUrl(url)}" data-direct="${url}" referrerpolicy="no-referrer" loading="lazy" decoding="async" alt="Halaman ${title} Chapter ${num}">`).join('');
       pagesWrap.hidden = false;
       emptyMsg.hidden = true;
       endBox.hidden = false;
@@ -4636,9 +5039,9 @@
 
   function renderSearchUpdates(){
     const wrap = document.getElementById('searchResultsWrap');
-    const all = sortByActivity(allTitles());
+    const all = sortByActivity(bySource(allTitles()));
     if(all.length === 0){
-      wrap.innerHTML = `<div class="search-empty">Belum ada judul.</div>`;
+      wrap.innerHTML = `${sourceSwitchHTML()}<div class="search-empty">Belum ada judul ${mirTxt()}saat ini.</div>`;
       return;
     }
     const totalPages = Math.max(1, Math.ceil(all.length / SEARCH_UPDATE_PAGE));
@@ -4647,6 +5050,7 @@
     const shown = all.slice(start, start + SEARCH_UPDATE_PAGE);
     searchMode = 'updates';
     wrap.innerHTML = `
+      ${sourceSwitchHTML()}
       ${listToolbarHTML('Update terbaru')}
       ${titleListHTML(shown, true)}
       ${searchPagerHTML(totalPages, searchUpdatePage)}`;
@@ -4672,7 +5076,7 @@
     const { results, label } = searchLast;
     searchMode = 'results';
     if(results.length === 0){
-      wrap.innerHTML = `${listToolbarHTML(label)}<div class="search-empty">Tidak ada hasil yang cocok.</div>`;
+      wrap.innerHTML = `${sourceSwitchHTML()}${listToolbarHTML(label)}<div class="search-empty">Tidak ada hasil yang cocok${sourceMode === 'mirror' ? ' di Mirror' : ''}.</div>`;
       return;
     }
     const totalPages = Math.max(1, Math.ceil(results.length / SEARCH_UPDATE_PAGE));
@@ -4680,6 +5084,7 @@
     const start = (searchResultPage - 1) * SEARCH_UPDATE_PAGE;
     const shown = results.slice(start, start + SEARCH_UPDATE_PAGE);
     wrap.innerHTML = `
+      ${sourceSwitchHTML()}
       ${listToolbarHTML(label)}
       ${titleListHTML(shown, true)}
       ${searchPagerHTML(totalPages, searchResultPage)}`;
@@ -4705,7 +5110,7 @@
     const match = makeMatcher(query);
     const wrap = document.getElementById('searchResultsWrap');
     if(!q && !hasActiveFilters()){ renderSearchUpdates(); return; }
-    const results = allTitles().filter(it=>{
+    const results = bySource(allTitles()).filter(it=>{
       const matchesQuery = !q ||
         match(it.t) ||
         match(it.author) ||
@@ -5572,7 +5977,7 @@
     const q = (document.getElementById('infoTitleSearch').value || '').trim();
     const match = makeMatcher(q);
     const prev = select.value;
-    const list = allTitles().filter(it=>it.supabaseId).sort((a,b)=>a.t.localeCompare(b.t)).filter(it=>!q || match(it.t));
+    const list = allTitles().filter(it=>it.supabaseId && it.source !== 'mirror').sort((a,b)=>a.t.localeCompare(b.t)).filter(it=>!q || match(it.t));
     select.innerHTML = '<option value="">— Tidak ditautkan —</option>' +
       list.slice(0, 200).map(it=>'<option value="' + nEsc(it.supabaseId) + '">' + nEsc(it.t) + '</option>').join('');
     if(prev && [...select.options].some(o=>o.value === prev)) select.value = prev;
@@ -5932,6 +6337,7 @@
     selectGenre('Manhwa');
     renderFeatured();
     renderContinue();
+    loadMirrorTitles().then(n=>{ if(n){ refreshHomeLists(); renderContinue(); } }).catch(()=>{});
     await Nav.boot();
   })();
 })();
