@@ -1758,6 +1758,7 @@
   // Gambar disimpan di R2 (alamat pub-xxxx.r2.dev). Sebagian operator seluler memblokir alamat itu,
   // jadi saat ditampilkan, alamatnya dialihkan lewat domain Henka sendiri (/img/...), yang diteruskan oleh vercel.json.
   let titleSeq = 0;
+  let titleNamesDirty = true, titleNamesCount = -1;
   const USE_IMAGE_PROXY = true;
   const R2_HOST_RE = /^https:\/\/pub-[a-z0-9]+\.r2\.dev\//i;
   function proxyUrl(u){
@@ -1766,10 +1767,12 @@
   }
 
   function mapRowToItem(row){
+    titleNamesDirty = true;
     return {
       supabaseId: row.id,
       id: row.id,
       t: row.title,
+      rawT: row.title,   // judul asli dari database (t bisa diberi tambahan kalau ada judul kembar)
       c: [row.color_1 || '#5b2a8c', row.color_2 || '#1c0e2e'],
       cover: proxyUrl(row.cover_url) || null,
       coverDirect: row.cover_url || null,
@@ -2265,7 +2268,7 @@
     };
     const genres = (ov.genres && ov.genres.length) ? ov.genres : liveGenres;
     editingItem = { cat: row.category, id: row.id, mirror: true, snap };
-    document.getElementById('admTitle').value = it.t;
+    document.getElementById('admTitle').value = (it.rawT || it.t);
     document.getElementById('admCoverFile').value = '';
     document.getElementById('admCategory').value = row.category;
     document.getElementById('admStatus').value = ov.status || snap.status;
@@ -2798,7 +2801,34 @@
     });
   })();
 
-  function allTitles(){ return [...titles.Manhwa, ...titles.Manga, ...titles.Manhua]; }
+  function allTitles(){
+    const all = [...titles.Manhwa, ...titles.Manga, ...titles.Manhua];
+    if(titleNamesDirty || all.length !== titleNamesCount){ titleNamesDirty = false; titleNamesCount = all.length; dedupeTitleNames(all); }
+    return all;
+  }
+
+  // Aplikasi mengenali judul lewat namanya (item.t). Kalau ada dua judul bernama sama (Project vs Mirror,
+  // atau dua judul Mirror), yang kedua dst. diberi tambahan supaya tiap judul unik dan tidak bertabrakan.
+  // Judul asli tetap di item.rawT (dipakai form admin). Urutan: Project dulu, lalu menurut urutan muat.
+  function dedupeTitleNames(all){
+    const groups = new Map();
+    all.forEach(it=>{
+      if(it.rawT === undefined) it.rawT = it.t;
+      const g = groups.get(it.rawT);
+      if(g) g.push(it); else groups.set(it.rawT, [it]);
+    });
+    groups.forEach(list=>{
+      if(list.length === 1){ list[0].t = list[0].rawT; return; }
+      list.sort((a, b)=>((a.source === 'mirror') - (b.source === 'mirror')) || ((a.seq || 0) - (b.seq || 0)));
+      let nP = 0, nM = 0;
+      list.forEach((it, i)=>{
+        const mir = it.source === 'mirror';
+        if(mir) nM++; else nP++;
+        if(i === 0){ it.t = it.rawT; return; }
+        it.t = mir ? (nM === 1 ? `${it.rawT} (Mirror)` : `${it.rawT} (Mirror ${nM})`) : `${it.rawT} (${nP})`;
+      });
+    });
+  }
 
   function findItem(name){ return allTitles().find(x=>x.t===name); }
 
@@ -5026,7 +5056,7 @@
     editingItem = { cat, id };
     document.getElementById('admAuthor').required = true;
     document.getElementById('admGenre').required = true;
-    document.getElementById('admTitle').value = it.t;
+    document.getElementById('admTitle').value = (it.rawT || it.t);
     document.getElementById('admCoverFile').value = '';
     document.getElementById('admCategory').value = cat;
     document.getElementById('admStatus').value = it.status;
