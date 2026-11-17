@@ -1758,7 +1758,6 @@
   // Gambar disimpan di R2 (alamat pub-xxxx.r2.dev). Sebagian operator seluler memblokir alamat itu,
   // jadi saat ditampilkan, alamatnya dialihkan lewat domain Henka sendiri (/img/...), yang diteruskan oleh vercel.json.
   let titleSeq = 0;
-  let titleNamesDirty = true, titleNamesCount = -1;
   const USE_IMAGE_PROXY = true;
   const R2_HOST_RE = /^https:\/\/pub-[a-z0-9]+\.r2\.dev\//i;
   function proxyUrl(u){
@@ -1767,12 +1766,11 @@
   }
 
   function mapRowToItem(row){
-    titleNamesDirty = true;
     return {
       supabaseId: row.id,
       id: row.id,
+      k: String(row.id),   // pengenal unik judul (nama judul boleh kembar)
       t: row.title,
-      rawT: row.title,   // judul asli dari database (t bisa diberi tambahan kalau ada judul kembar)
       c: [row.color_1 || '#5b2a8c', row.color_2 || '#1c0e2e'],
       cover: proxyUrl(row.cover_url) || null,
       coverDirect: row.cover_url || null,
@@ -1927,7 +1925,7 @@
     return 'ongoing';
   }
   async function paintMirrorDetail(item, token){
-    const alive = ()=> token === detailLoadToken && currentDetailTitle === item.t;
+    const alive = ()=> token === detailLoadToken && currentDetailTitle === item.k;
     const synEl = document.getElementById('detailSynopsis');
     synEl.textContent = 'Memuat sinopsis…';
     const credit = MIRROR_CREDIT.url
@@ -2268,7 +2266,7 @@
     };
     const genres = (ov.genres && ov.genres.length) ? ov.genres : liveGenres;
     editingItem = { cat: row.category, id: row.id, mirror: true, snap };
-    document.getElementById('admTitle').value = (it.rawT || it.t);
+    document.getElementById('admTitle').value = it.t;
     document.getElementById('admCoverFile').value = '';
     document.getElementById('admCategory').value = row.category;
     document.getElementById('admStatus').value = ov.status || snap.status;
@@ -2356,7 +2354,7 @@
   // showUp = true hanya dipakai di daftar Update (Lihat semua) dan pencarian; Rekomendasi/Populer tidak memakainya
   function cardHTML(item, isNew, showUp){
     return `
-      <div class="card" data-title="${item.t}">
+      <div class="card" data-title="${item.k}">
         <div class="cover" style="${coverStyle(item)}">
           <div class="badge-row">
             ${flagBadge(item)}
@@ -2496,7 +2494,7 @@
     const syn = String(item.synopsis || '').replace(/\s+/g, ' ').trim();
     const genre = (item.genres && item.genres[0]) || item.tag || '';
     return `
-      <div class="card trow" data-title="${item.t}">
+      <div class="card trow" data-title="${item.k}">
         <div class="trow-cover" style="${coverStyle(item)}">
           <div class="badge-row">${flagBadge(item)}${titleIsNew(item) ? '<span class="up-badge on-cover">NEW</span>' : ''}</div>
         </div>
@@ -2560,7 +2558,7 @@
     const id = String(item.supabaseId || '');
     const n = parseInt(String(item.ch).replace(/\D/g, '')) || 0;
     return `
-      <div class="card upd-card" data-title="${item.t}">
+      <div class="card upd-card" data-title="${item.k}">
         <div class="cover" style="${coverStyle(item)}">
           <div class="badge-row">${flagBadge(item)}${titleIsNew(item) ? '<span class="up-badge on-cover">NEW</span>' : ''}</div>
           ${item.cover ? '' : `<span class="cover-title">${item.t}</span>`}
@@ -2580,7 +2578,7 @@
         const up = upChapterSet(rows);   // tanda UP: aturan sama dengan daftar chapter (3 terbaru, maks. UP_DAYS hari)
         const html = rows.length
           ? rows.map(r=>`
-              <div class="upd-ch" data-title="${it.t}" data-chapter="${r.num}">
+              <div class="upd-ch" data-title="${it.k}" data-chapter="${r.num}">
                 ${upBadgeHTML(r, up)}
                 <span class="upd-ch-num">Chapter ${r.num}</span>
                 <span class="upd-ch-time">${r.when}</span>
@@ -2627,7 +2625,7 @@
     return Object.keys(lib.h).map(id=>{
       const it = itemById(id);
       const e = lib.h[id];
-      return it ? { title: it.t, read: e.read, max: e.max, at: e.at } : null;
+      return it ? { title: it.k, read: e.read, max: e.max, at: e.at } : null;
     }).filter(Boolean).sort((a,b)=>b.at - a.at);
   }
 
@@ -2677,7 +2675,7 @@
       if(!item) return '';
       const p = historyProgress(h, item);
       return `
-        <div class="card" data-title="${item.t}" data-resume="${h.read}">
+        <div class="card" data-title="${item.k}" data-resume="${h.read}">
           <div class="cover" style="${coverStyle(item)}">
             <div class="badge-row">${flagBadge(item)}</div>
             ${item.cover ? '' : `<span class="cover-title">${item.t}</span>`}
@@ -2787,7 +2785,7 @@
       if(moved && dx < -w * 0.15) goFeatured(featIndex + 1);
       else if(moved && dx > w * 0.15) goFeatured(featIndex - 1);
       else goFeatured(featIndex);
-      if(!cancelled && !moved && !scrolled && featItems[featIndex]) openDetail(featItems[featIndex].t);
+      if(!cancelled && !moved && !scrolled && featItems[featIndex]) openDetail(featItems[featIndex].k);
       startFeatured();
     }
     vp.addEventListener('pointerup', ()=>end(false));
@@ -2801,36 +2799,13 @@
     });
   })();
 
-  function allTitles(){
-    const all = [...titles.Manhwa, ...titles.Manga, ...titles.Manhua];
-    if(titleNamesDirty || all.length !== titleNamesCount){ titleNamesDirty = false; titleNamesCount = all.length; dedupeTitleNames(all); }
-    return all;
-  }
+  function allTitles(){ return [...titles.Manhwa, ...titles.Manga, ...titles.Manhua]; }
 
-  // Aplikasi mengenali judul lewat namanya (item.t). Kalau ada dua judul bernama sama (Project vs Mirror,
-  // atau dua judul Mirror), yang kedua dst. diberi tambahan supaya tiap judul unik dan tidak bertabrakan.
-  // Judul asli tetap di item.rawT (dipakai form admin). Urutan: Project dulu, lalu menurut urutan muat.
-  function dedupeTitleNames(all){
-    const groups = new Map();
-    all.forEach(it=>{
-      if(it.rawT === undefined) it.rawT = it.t;
-      const g = groups.get(it.rawT);
-      if(g) g.push(it); else groups.set(it.rawT, [it]);
-    });
-    groups.forEach(list=>{
-      if(list.length === 1){ list[0].t = list[0].rawT; return; }
-      list.sort((a, b)=>((a.source === 'mirror') - (b.source === 'mirror')) || ((a.seq || 0) - (b.seq || 0)));
-      let nP = 0, nM = 0;
-      list.forEach((it, i)=>{
-        const mir = it.source === 'mirror';
-        if(mir) nM++; else nP++;
-        if(i === 0){ it.t = it.rawT; return; }
-        it.t = mir ? (nM === 1 ? `${it.rawT} (Mirror)` : `${it.rawT} (Mirror ${nM})`) : `${it.rawT} (${nP})`;
-      });
-    });
+  // key = id judul (item.k). Nama judul sebagai cadangan, hanya untuk data lama yang tersimpan berdasarkan nama.
+  function findItem(key){
+    const all = allTitles(), k = String(key);
+    return all.find(x=>x.k === k) || all.find(x=>x.t === key);
   }
-
-  function findItem(name){ return allTitles().find(x=>x.t===name); }
 
   function parseViews(v){
     const num = parseFloat(v);
@@ -2985,7 +2960,7 @@
 
   function getBookmarks(){
     const out = {};
-    Object.keys(lib.b).forEach(id=>{ const it = itemById(id); if(it) out[it.t] = true; });
+    Object.keys(lib.b).forEach(id=>{ const it = itemById(id); if(it) out[it.k] = true; });
     return out;
   }
   function setBookmark(title, on){
@@ -3190,7 +3165,7 @@
   async function openDetail(title, opts){
     const item = findItem(title);
     if(!item) return;
-    currentDetailTitle = title;
+    currentDetailTitle = item.k;
     const token = ++detailLoadToken;
 
     const banner = document.getElementById('detailBanner');
@@ -3230,14 +3205,14 @@
         <div class="info-row"><div class="info-label">${label}</div><div class="info-vals">${chips}</div></div>`).join('');
     }
 
-    const isBookmarked = !!getBookmarks()[item.t];
+    const isBookmarked = !!getBookmarks()[item.k];
     const bookmarkBtn = document.getElementById('detailBookmarkBtn');
     bookmarkBtn.classList.toggle('active', isBookmarked);
-    bookmarkBtn.dataset.title = item.t;
+    bookmarkBtn.dataset.title = item.k;
 
     const baseBookmarks = 40 + (item.t.length * 7) % 200;
     function paintStats(){
-      const on = !!getBookmarks()[item.t];
+      const on = !!getBookmarks()[item.k];
       document.getElementById('detailViews').textContent = `${item.views} Views`;
       document.getElementById('detailBookmarks').textContent =
         `${baseBookmarks + (on?1:0)} Bookmarks`;
@@ -3304,7 +3279,7 @@
     showDetailView();
     const list = await loading;
     chaptersCache.set(key, list);
-    if(token === detailLoadToken && currentDetailTitle === title) finish(list);
+    if(token === detailLoadToken && currentDetailTitle === item.k) finish(list);
   }
 
   function closeDetail(){
@@ -4917,10 +4892,10 @@
 
   async function openReader(title, num){
     const item = findItem(title);
-    currentDetailTitle = title;
+    currentDetailTitle = item ? item.k : title;
     readerNum = Number(num);
     if(item){ recordHistory(title, num); }
-    document.getElementById('readerTitle').textContent = title;
+    document.getElementById('readerTitle').textContent = item ? item.t : title;
     document.getElementById('readerChapterLabel').textContent = `Chapter ${num}`;
     const pagesWrap = document.getElementById('readerPages');
     const emptyMsg = document.getElementById('readerEmpty');
@@ -4948,7 +4923,7 @@
     const images = (item && item.supabaseId) ? await getChapterImagesRemote(item, num) : null;
     if(Number(num) !== readerNum) return;   // pembaca sudah pindah chapter
     if(images && images.length){
-      pagesWrap.innerHTML = images.map(url=>`<img src="${proxyUrl(url)}" data-direct="${url}" referrerpolicy="no-referrer" loading="lazy" decoding="async" alt="Halaman ${title} Chapter ${num}">`).join('');
+      pagesWrap.innerHTML = images.map(url=>`<img src="${proxyUrl(url)}" data-direct="${url}" referrerpolicy="no-referrer" loading="lazy" decoding="async" alt="Halaman ${item ? item.t : title} Chapter ${num}">`).join('');
       pagesWrap.hidden = false;
       emptyMsg.hidden = true;
       endBox.hidden = false;
@@ -5056,7 +5031,7 @@
     editingItem = { cat, id };
     document.getElementById('admAuthor').required = true;
     document.getElementById('admGenre').required = true;
-    document.getElementById('admTitle').value = (it.rawT || it.t);
+    document.getElementById('admTitle').value = it.t;
     document.getElementById('admCoverFile').value = '';
     document.getElementById('admCategory').value = cat;
     document.getElementById('admStatus').value = it.status;
@@ -5763,8 +5738,8 @@
     if(!card) return;
     const it = titleById(card.dataset.tid);
     if(!it) return;
-    await openDetail(it.t);
-    openReader(it.t, card.dataset.ch);
+    await openDetail(it.k);
+    openReader(it.k, card.dataset.ch);
   });
 
   function renderHistory(){
@@ -5786,7 +5761,7 @@
         const item = findItem(h.title);
         const p = historyProgress(h, item);
         return `
-          <div class="history-card" data-title="${item.t}" data-resume="${h.read}">
+          <div class="history-card" data-title="${item.k}" data-resume="${h.read}">
             <div class="history-cover" style="${coverStyle(item)}"></div>
             <div class="history-info">
               <div class="history-top">
@@ -6067,7 +6042,7 @@
     notifPushSoon();
     paintBell();
     const it = titleById(row.dataset.tid);
-    if(it) openDetail(it.t); else renderNotif();
+    if(it) openDetail(it.k); else renderNotif();
   });
   // kembali ke tab/aplikasi: periksa notifikasi lagi (paling sering tiap 60 detik)
   document.addEventListener('visibilitychange', ()=>{
@@ -6216,7 +6191,7 @@
   function openInfoTag(tagEl){
     const post = infoState[infoState.tab].items.find(x=>String(x.id) === String(tagEl.closest('.ip').dataset.pid));
     const it = infoTagTarget(tagEl.dataset.tag, post);
-    if(it){ openDetail(it.t); return; }
+    if(it){ openDetail(it.k); return; }
     document.getElementById('searchInput').value = tagEl.dataset.tag;   // tidak ada judul yang cocok: cari
     openSearchOverlay();
   }
@@ -6415,8 +6390,8 @@
       const h = location.hash || '';
       if(h.indexOf('#/') !== 0) return null;      // selain #/... (mis. data login Google) dibiarkan
       const p = h.slice(2).split('/').map(s=>{ try{ return decodeURIComponent(s); }catch(e){ return s; } });
-      if(p[0] === 'judul' && p[1]){ const it = itemByKey(p[1]); return it ? { n:'detail', t:it.t } : null; }
-      if(p[0] === 'baca' && p[1] && p[2]){ const it = itemByKey(p[1]); return it ? { n:'reader', t:it.t, c:Number(p[2]) } : null; }
+      if(p[0] === 'judul' && p[1]){ const it = itemByKey(p[1]); return it ? { n:'detail', t:it.k } : null; }
+      if(p[0] === 'baca' && p[1] && p[2]){ const it = itemByKey(p[1]); return it ? { n:'reader', t:it.k, c:Number(p[2]) } : null; }
       if(TABS.indexOf(p[0]) > -1) return { n:p[0] };
       if(p[0] === 'admin') return { n:'admin' };
       if(p[0] === 'notifikasi') return { n:'notif' };
