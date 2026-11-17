@@ -1198,6 +1198,14 @@
     <div class="card-row" id="continueRow"></div>
   </section>
 
+  <section id="projectSection" hidden>
+    <div class="section-head">
+      <h2 class="section-title">Project</h2>
+      <a class="section-link" href="#" data-seeall="project">Lihat semua</a>
+    </div>
+    <div class="card-row" id="projectRow"></div>
+  </section>
+
   <section>
     <div class="tab-row" id="genreTabs">
       <button class="tab active" data-genre="Manhwa">Manhwa</button>
@@ -1208,7 +1216,6 @@
       <h2 class="section-title">Rekomendasi</h2>
       <a class="section-link" href="#" data-seeall="rec">Lihat semua</a>
     </div>
-    <div class="src-switch"></div>
     <div class="card-row" id="recRow"></div>
   </section>
 
@@ -1217,7 +1224,6 @@
       <h2 class="section-title">Update</h2>
       <a class="section-link" href="#" data-seeall="update">Lihat semua</a>
     </div>
-    <div class="src-switch"></div>
     <div class="grid grid-2" id="updateGrid"></div>
   </section>
 
@@ -1226,7 +1232,6 @@
       <h2 class="section-title">Populer</h2>
       <a class="section-link" href="#" data-seeall="populer">Lihat semua</a>
     </div>
-    <div class="src-switch"></div>
     <div class="card-row" id="populerRow"></div>
   </section>
 </main>
@@ -1361,6 +1366,8 @@
     <div class="filter-chip-grid" id="filterStatusGrid"></div>
     <div class="filter-group-label">Format</div>
     <div class="filter-chip-grid" id="filterFormatGrid"></div>
+    <div class="filter-group-label">Sumber</div>
+    <div class="filter-chip-grid" id="filterSourceGrid"></div>
     <div class="filter-apply-bar"><button class="filter-apply-btn" id="filterApplyBtn">Terapkan Filter</button></div>
   </div>
   <div class="search-results" id="searchResultsWrap"></div>
@@ -2352,7 +2359,7 @@
   }
 
   // showUp = true hanya dipakai di daftar Update (Lihat semua) dan pencarian; Rekomendasi/Populer tidak memakainya
-  function cardHTML(item, isNew, showUp){
+  function cardHTML(item, isNew, showUp, showViews){
     return `
       <div class="card" data-title="${item.k}">
         <div class="cover" style="${coverStyle(item)}">
@@ -2364,7 +2371,7 @@
           ${item.cover ? '' : `<span class="cover-title">${item.t}</span>`}
         </div>
         <div class="card-name"><span>${item.t}</span></div>
-        <div class="card-meta"><span>${item.source === 'mirror' ? ((Number(item.rating) > 0) ? '★ ' + item.rating : '') : '⊙ ' + item.views}</span><span>${item.ch}</span></div>
+        <div class="card-meta"><span>${(item.source === 'mirror' && !showViews) ? ((Number(item.rating) > 0) ? '★ ' + item.rating : '') : '⊙ ' + item.views}</span><span>${item.ch}</span></div>
       </div>`;
   }
 
@@ -2487,7 +2494,7 @@
 
   function statusKeyOf(item){ return item.status === 'Ongoing' ? 'ongoing' : item.status === 'Hiatus' ? 'hiatus' : 'completed'; }
 
-  function listRowHTML(item){
+  function listRowHTML(item, noStar){
     const st = statusKeyOf(item);
     const n = parseInt(String(item.ch).replace(/\D/g, '')) || 0;
     const ico = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
@@ -2501,7 +2508,7 @@
         <div class="trow-body">
           <h3 class="trow-title">${item.t}</h3>
           <div class="trow-stats">
-            ${item.rating ? `<span>${ico('<polygon points="12 3 14.9 9 21.5 9.8 16.6 14.3 17.9 21 12 17.6 6.1 21 7.4 14.3 2.5 9.8 9.1 9"/>')}${item.rating}</span>` : ''}
+            ${(item.rating && !noStar) ? `<span>${ico('<polygon points="12 3 14.9 9 21.5 9.8 16.6 14.3 17.9 21 12 17.6 6.1 21 7.4 14.3 2.5 9.8 9.1 9"/>')}${item.rating}</span>` : ''}
             <span>${ico('<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>')}${item.views}</span>
             ${n ? `<span>${ico('<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21V5"/>')}Ch. ${n}</span>` : ''}
           </div>
@@ -2515,10 +2522,10 @@
   }
 
   // satu pintu untuk semua daftar judul (pencarian, Lihat semua)
-  function titleListHTML(items, showUp){
-    if(viewMode === 'list')   return `<div class="tlist">${items.map(listRowHTML).join('')}</div>`;
+  function titleListHTML(items, showUp, showViews){
+    if(viewMode === 'list')   return `<div class="tlist">${items.map(it=>listRowHTML(it, showViews)).join('')}</div>`;
     if(viewMode === 'update') return `<div class="grid grid-2">${items.map(cardUpdateHTML).join('')}</div>`;
-    return `<div class="grid">${items.map(it=>cardHTML(it, false, showUp)).join('')}</div>`;
+    return `<div class="grid">${items.map(it=>cardHTML(it, false, showUp, showViews)).join('')}</div>`;
   }
   // chapter terbaru di model 2 kolom diambil hanya untuk kartu yang terlihat di layar
   let updObserver = null;
@@ -2601,16 +2608,24 @@
     }));
   }
 
+  // baris Project (semua format) di atas tombol Manhwa/Manga/Manhua, diurutkan dari yang terakhir diperbarui
+  function renderProjectRow(){
+    const list = sortByActivity(allTitles().filter(it=>it.source !== 'mirror')).slice(0, 12);
+    const sec = document.getElementById('projectSection');
+    if(sec) sec.hidden = list.length === 0;
+    document.getElementById('projectRow').innerHTML = list.map(it=>cardHTML(it, false, true)).join('');
+  }
+
   function selectGenre(genre){
-    document.querySelectorAll('main .src-switch').forEach(el=>{ el.innerHTML = sourceBtnsHTML(); });
-    const pool = bySource(titles[genre]);
+    renderProjectRow();
+    const pool = titles[genre] || [];   // Project dan Mirror digabung
     const rec = pool.filter(it=>it.isRecommended);
     const UPDATE_HOME_LIMIT = 6;   // 3 baris x 2 kolom di beranda; sisanya lewat "Lihat semua"
     const upd = sortByActivity(pool).slice(0, UPDATE_HOME_LIMIT);
     document.getElementById('recRow').innerHTML =
-      rec.map((it,i)=>cardHTML(it, i===0)).join('') || `<div class="empty-note">Belum ada rekomendasi ${mirTxt()}di ${genre}.</div>`;
+      rec.map((it,i)=>cardHTML(it, i===0)).join('') || `<div class="empty-note">Belum ada rekomendasi di ${genre}.</div>`;
     document.getElementById('updateGrid').innerHTML =
-      upd.map(it=>cardUpdateHTML(it)).join('') || `<div class="empty-note">Belum ada judul ${mirTxt()}di ${genre}.</div>`;
+      upd.map(it=>cardUpdateHTML(it)).join('') || `<div class="empty-note">Belum ada judul di ${genre}.</div>`;
     fillUpdateChapters(upd);
     loadActivity().then(changed=>{
       const cur = document.querySelector('#genreTabs .tab.active')?.dataset.genre;
@@ -2815,9 +2830,9 @@
   }
 
   function renderPopuler(genre){
-    const pop = bySource(titles[genre]).filter(it=>it.isPopular);
+    const pop = (titles[genre] || []).filter(it=>it.isPopular);
     document.getElementById('populerRow').innerHTML =
-      pop.map(item=>cardHTML(item,false)).join('') || `<div class="empty-note">Belum ada judul populer ${mirTxt()}di ${genre}.</div>`;
+      pop.map(item=>cardHTML(item,false)).join('') || `<div class="empty-note">Belum ada judul populer di ${genre}.</div>`;
   }
 
   function buildSynopsis(item){
@@ -3368,22 +3383,24 @@
 
   function renderSeeAllList(){
     const { kind, genre } = seeAllState;
-    const pool = bySource(titles[genre]);
+    const pool = titles[genre] || [];
     let list = pool.filter(it=>it.isRecommended);
     if(kind === 'update') list = sortByActivity(pool);
     if(kind === 'populer') list = pool.filter(it=>it.isPopular);
+    if(kind === 'project') list = sortByActivity(allTitles().filter(it=>it.source !== 'mirror'));
     const wrap = document.getElementById('seeAllWrap');
-    wrap.innerHTML = sourceSwitchHTML() + (list.length
-      ? titleListHTML(list, kind === 'update')
-      : `<div class="koleksi-empty">Belum ada judul ${mirTxt()}di ${genre}.</div>`);
+    wrap.innerHTML = (list.length
+      ? titleListHTML(list, kind === 'update' || kind === 'project')
+      : `<div class="koleksi-empty">Belum ada judul ${kind === 'project' ? 'Project.' : 'di ' + genre + '.'}</div>`);
     afterTitleList(wrap);
   }
 
   function showSeeAll(kind, genre){
     genre = genre || document.querySelector('#genreTabs .tab.active')?.dataset.genre || 'Manhwa';
+    if(kind === 'project') genre = 'Semua';
     seeAllState = { kind, genre };
-    const label = kind === 'update' ? 'Update' : kind === 'populer' ? 'Populer' : 'Rekomendasi';
-    document.getElementById('seeAllTitle').textContent = `${label} · ${genre}`;
+    const label = kind === 'update' ? 'Update' : kind === 'populer' ? 'Populer' : kind === 'project' ? 'Project' : 'Rekomendasi';
+    document.getElementById('seeAllTitle').textContent = kind === 'project' ? label : `${label} · ${genre}`;
     document.getElementById('seeAllSwitch').innerHTML = viewSwitchHTML();
     renderSeeAllList();
     hideAllTabs();
@@ -5233,7 +5250,11 @@
   let selectedFilters = new Set();      // genre (semua yang dipilih harus cocok)
   let selectedStatus  = new Set();      // status (salah satu cocok)
   let selectedFormat  = new Set();      // format/kategori (salah satu cocok)
-  const hasActiveFilters = ()=> selectedFilters.size + selectedStatus.size + selectedFormat.size > 0;
+  let selectedSource  = new Set();      // sumber: Project / Mirror (kosong = gabungan keduanya)
+  const SOURCE_OPTIONS = ['Project', 'Mirror'];
+  const bySearchSource = list => selectedSource.size === 0 ? list
+    : list.filter(it=>selectedSource.has(it.source === 'mirror' ? 'Mirror' : 'Project'));
+  const hasActiveFilters = ()=> selectedFilters.size + selectedStatus.size + selectedFormat.size + selectedSource.size > 0;
   const norm = v => String(v || '').trim().toLowerCase();
 
   // ===== Pencarian yang toleran =====
@@ -5274,9 +5295,9 @@
 
   function renderSearchUpdates(){
     const wrap = document.getElementById('searchResultsWrap');
-    const all = sortByActivity(bySource(allTitles()));
+    const all = sortByActivity(bySearchSource(allTitles()));
     if(all.length === 0){
-      wrap.innerHTML = `${sourceSwitchHTML()}<div class="search-empty">Belum ada judul ${mirTxt()}saat ini.</div>`;
+      wrap.innerHTML = `<div class="search-empty">Belum ada judul saat ini.</div>`;
       return;
     }
     const totalPages = Math.max(1, Math.ceil(all.length / SEARCH_UPDATE_PAGE));
@@ -5285,9 +5306,8 @@
     const shown = all.slice(start, start + SEARCH_UPDATE_PAGE);
     searchMode = 'updates';
     wrap.innerHTML = `
-      ${sourceSwitchHTML()}
       ${listToolbarHTML('Update terbaru')}
-      ${titleListHTML(shown, true)}
+      ${titleListHTML(shown, true, true)}
       ${searchPagerHTML(totalPages, searchUpdatePage)}`;
     afterTitleList(wrap);
   }
@@ -5311,7 +5331,7 @@
     const { results, label } = searchLast;
     searchMode = 'results';
     if(results.length === 0){
-      wrap.innerHTML = `${sourceSwitchHTML()}${listToolbarHTML(label)}<div class="search-empty">Tidak ada hasil yang cocok${sourceMode === 'mirror' ? ' di Mirror' : ''}.</div>`;
+      wrap.innerHTML = `${listToolbarHTML(label)}<div class="search-empty">Tidak ada hasil yang cocok.</div>`;
       return;
     }
     const totalPages = Math.max(1, Math.ceil(results.length / SEARCH_UPDATE_PAGE));
@@ -5319,9 +5339,8 @@
     const start = (searchResultPage - 1) * SEARCH_UPDATE_PAGE;
     const shown = results.slice(start, start + SEARCH_UPDATE_PAGE);
     wrap.innerHTML = `
-      ${sourceSwitchHTML()}
       ${listToolbarHTML(label)}
-      ${titleListHTML(shown, true)}
+      ${titleListHTML(shown, true, true)}
       ${searchPagerHTML(totalPages, searchResultPage)}`;
     afterTitleList(wrap);
   }
@@ -5345,7 +5364,7 @@
     const match = makeMatcher(query);
     const wrap = document.getElementById('searchResultsWrap');
     if(!q && !hasActiveFilters()){ renderSearchUpdates(); return; }
-    const results = bySource(allTitles()).filter(it=>{
+    const results = bySearchSource(allTitles()).filter(it=>{
       const matchesQuery = !q ||
         match(it.t) ||
         match(it.author) ||
@@ -5358,7 +5377,7 @@
     });
     const label = q
       ? `${results.length} hasil untuk "${nEsc(query.trim())}"`
-      : `${results.length} hasil untuk filter: ${nEsc([...selectedFilters, ...selectedStatus, ...selectedFormat].join(', '))}`;
+      : `${results.length} hasil untuk filter: ${nEsc([...selectedFilters, ...selectedStatus, ...selectedFormat, ...selectedSource].join(', '))}`;
     searchLast = { results, label };
     searchResultPage = 1;
     renderSearchResults();
@@ -5371,6 +5390,7 @@
     document.getElementById('filterChipGrid').innerHTML  = chips(genreList, selectedFilters, 'genre');
     document.getElementById('filterStatusGrid').innerHTML = chips(STATUS_OPTIONS, selectedStatus, 'status');
     document.getElementById('filterFormatGrid').innerHTML = chips(FORMAT_OPTIONS, selectedFormat, 'format');
+    document.getElementById('filterSourceGrid').innerHTML = chips(SOURCE_OPTIONS, selectedSource, 'source');
   }
 
   document.getElementById('filterToggleBtn').addEventListener('click', ()=>{
@@ -5382,14 +5402,14 @@
   document.getElementById('filterPanel').addEventListener('click', e=>{
     const chip = e.target.closest('.filter-chip');
     if(!chip) return;
-    const set = chip.dataset.group === 'status' ? selectedStatus : chip.dataset.group === 'format' ? selectedFormat : selectedFilters;
+    const set = chip.dataset.group === 'status' ? selectedStatus : chip.dataset.group === 'format' ? selectedFormat : chip.dataset.group === 'source' ? selectedSource : selectedFilters;
     const v = chip.dataset.value;
     if(set.has(v)) set.delete(v); else set.add(v);
     chip.classList.toggle('active');
   });
 
   document.getElementById('filterReset').addEventListener('click', ()=>{
-    selectedFilters.clear(); selectedStatus.clear(); selectedFormat.clear();
+    selectedFilters.clear(); selectedStatus.clear(); selectedFormat.clear(); selectedSource.clear();
     renderFilterChips();
     document.getElementById('filterToggleBtn').classList.remove('has-active');
     runSearch(document.getElementById('searchOverlayInput').value);
@@ -5422,7 +5442,7 @@
   let searchReturnDetail = null;
 
   function resetFilters(){
-    selectedFilters.clear(); selectedStatus.clear(); selectedFormat.clear();
+    selectedFilters.clear(); selectedStatus.clear(); selectedFormat.clear(); selectedSource.clear();
     document.getElementById('filterToggleBtn').classList.remove('has-active');
   }
 
