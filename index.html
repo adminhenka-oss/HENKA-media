@@ -1169,6 +1169,39 @@
     background: color-mix(in srgb, var(--accent) 24%, transparent);
     color: var(--text); border-color: var(--accent); box-shadow:none;
   }
+
+  /* Detail judul: gaya baru (pil status, statistik berikon, tombol utama ungu, info ringkas) */
+  .meta-row{ display:flex; align-items:center; gap:10px; margin-bottom:2px; }
+  .status-line{
+    display:inline-flex; align-items:center; gap:6px; margin:0; padding:4px 10px; border-radius:999px;
+    background: rgba(128,128,128,0.16); background: color-mix(in srgb, currentColor 16%, transparent);
+    font-size:0.82rem; font-weight:600;
+  }
+  .rating-inline{ font-size:0.85rem; font-weight:700; }
+  .detail-title{ font-size:1.45rem; margin:10px 0 14px; }
+  .stat-row{
+    display:flex; justify-content:space-between; text-align:left; margin:0 0 16px; padding:12px 16px;
+    border:1px solid var(--border); background: var(--bg-panel); border-radius:16px; color: var(--text);
+  }
+  .stat-row .st{ display:inline-flex; align-items:center; gap:6px; font-size:0.85rem; }
+  .stat-row .st b{ font-weight:600; }
+  .stat-row .st svg{ width:17px; height:17px; color: var(--text-faint); fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .action-row{ margin-bottom:18px; }
+  .btn-read{ background:linear-gradient(135deg, var(--accent), #9168f5); color:#fff; }
+  .btn-bookmark{ background:transparent; border:1px solid var(--border); color: var(--text); }
+  .btn-bookmark.active{
+    background: rgba(124,58,237,0.16); background: color-mix(in srgb, var(--accent) 16%, transparent);
+    border-color: var(--accent); color: var(--text);
+  }
+  .info-table{ margin:0 0 22px; padding:0; background:none; border:none; border-radius:0; gap:10px; }
+  .info-row.ir-Genre{ display:block; }
+  .info-row.ir-Genre .info-label{ display:none; }
+  .info-row.ir-Genre .info-vals{ flex-wrap:nowrap; overflow-x:auto; margin:0 -20px; padding:0 20px; scrollbar-width:none; }
+  .info-row.ir-Genre .info-vals::-webkit-scrollbar{ display:none; }
+  .info-row.ir-Genre .info-chip{ flex:none; border-radius:999px; padding:6px 14px; }
+  .info-row:not(.ir-Genre){ gap:14px; align-items:baseline; }
+  .info-row:not(.ir-Genre) .info-label{ width:62px; padding-top:0; font-weight:600; font-size:0.85rem; color: var(--text-faint); }
+  .info-row:not(.ir-Genre) .info-chip{ background:none; border:none; padding:0; border-radius:0; font-size:0.88rem; }
 </style>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#09090b">
@@ -1285,20 +1318,23 @@
     </div>
   </div>
   <div class="detail-body">
-    <div class="status-line">
-      <span class="status-dot"></span>
-      <span id="detailStatus">Ongoing</span>
-      <span class="meta-sep">•</span>
+    <div class="meta-row">
+      <div class="status-line">
+        <span class="status-dot"></span>
+        <span id="detailStatus">Ongoing</span>
+      </div>
       <span class="rating-inline" id="detailChips"></span>
     </div>
     <h1 class="detail-title" id="detailTitle"></h1>
+    <div class="stat-row">
+      <span class="st"><svg viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><b id="detailViews"></b></span>
+      <span class="st"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"/></svg><b id="detailBookmarks"></b></span>
+      <span class="st"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg><b id="detailComments">–</b></span>
+      <span class="st"><svg viewBox="0 0 24 24"><path d="M2 5h6a4 4 0 0 1 4 4v11a3 3 0 0 0-3-3H2z"/><path d="M22 5h-6a4 4 0 0 0-4 4v11a3 3 0 0 1 3-3h7z"/></svg><b id="detailChaptersN">–</b></span>
+    </div>
     <div class="action-row">
       <button class="btn-read" id="detailReadBtn">Baca Sekarang</button>
-      <button class="btn-bookmark" id="detailBookmarkBtn">Bookmarks</button>
-    </div>
-    <div class="stat-row">
-      <span id="detailViews"></span>
-      <span id="detailBookmarks"></span>
+      <button class="btn-bookmark" id="detailBookmarkBtn">Koleksi</button>
     </div>
     <div class="info-table" id="detailInfo"></div>
     <div class="synopsis-block">
@@ -1992,7 +2028,7 @@
       if(fmt) rows.push(['Format', `<span class="info-chip">${mirEsc(fmt)}</span>`]);
       rows.push(['Sumber', credit]);
       document.getElementById('detailInfo').innerHTML = rows.map(([label, chips])=>`
-        <div class="info-row"><div class="info-label">${label}</div><div class="info-vals">${chips}</div></div>`).join('');
+        <div class="info-row ir-${label}"><div class="info-label">${label}</div><div class="info-vals">${chips}</div></div>`).join('');
     };
     paintRows([]);
     // isian yang kamu ubah sendiri di Panel Admin (kalau ada) menang atas data dari sumber
@@ -3265,22 +3301,25 @@
       const fmt = categoryOf(item);
       if(fmt) rows.push(['Format', `<span class="info-chip">${fmt}</span>`]);
       document.getElementById('detailInfo').innerHTML = rows.map(([label, chips])=>`
-        <div class="info-row"><div class="info-label">${label}</div><div class="info-vals">${chips}</div></div>`).join('');
+        <div class="info-row ir-${label}"><div class="info-label">${label}</div><div class="info-vals">${chips}</div></div>`).join('');
     }
 
     const isBookmarked = !!getBookmarks()[item.k];
     const bookmarkBtn = document.getElementById('detailBookmarkBtn');
     bookmarkBtn.classList.toggle('active', isBookmarked);
+    bookmarkBtn.textContent = isBookmarked ? 'Tersimpan' : 'Koleksi';
     bookmarkBtn.dataset.title = item.k;
 
     const baseBookmarks = 40 + (item.t.length * 7) % 200;
     function paintStats(){
       const on = !!getBookmarks()[item.k];
-      document.getElementById('detailViews').textContent = `${item.views} Views`;
+      document.getElementById('detailViews').textContent = item.views;
       document.getElementById('detailBookmarks').textContent =
-        `${baseBookmarks + (on?1:0)} Bookmarks`;
+        String(baseBookmarks + (on?1:0));
     }
     paintStats();
+    document.getElementById('detailComments').textContent = '–';
+    document.getElementById('detailChaptersN').textContent = '–';
     bookmarkBtn._paint = paintStats;
 
     const synEl = document.getElementById('detailSynopsis');
@@ -3298,7 +3337,7 @@
       document.getElementById('detailReadBtn').textContent =
         (hh && currentChapters.some(c=>Number(c.num) === Number(hh.read))) ? 'Lanjutkan Ch. ' + hh.read : 'Baca Sekarang';
     }
-    function finish(list){ currentChapters = list; renderChapterList(); paintReadBtn(); }
+    function finish(list){ currentChapters = list; renderChapterList(); paintReadBtn(); document.getElementById('detailChaptersN').textContent = list.length; }
     function showDetailView(){
       detailOrigin = activeTab;
       document.querySelector('main').style.display = 'none';
@@ -4693,6 +4732,7 @@
     if(rin) cm.draft = rin.value;
     document.getElementById('cmCount').textContent =
       cm.unavailable ? 'Komentar' : (cm.total.toLocaleString('id-ID') + ' komentar');
+    { const dc = document.getElementById('detailComments'); if(dc && !cm.unavailable) dc.textContent = cm.total; }
     document.getElementById('cmSortLabel').textContent = cm.sort === 'top' ? 'Terpopuler' : 'Terbaru';
     if(cm.unavailable){
       list.innerHTML = '<div class="cm-note">' + (isAdmin()
@@ -5581,6 +5621,7 @@
     const title = this.dataset.title;
     const nowOn = !this.classList.contains('active');
     this.classList.toggle('active', nowOn);
+    this.textContent = nowOn ? 'Tersimpan' : 'Koleksi';
     setBookmark(title, nowOn);
     if(this._paint) this._paint();
   });
