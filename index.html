@@ -3320,6 +3320,13 @@
     paintStats();
     document.getElementById('detailComments').textContent = '–';
     document.getElementById('detailChaptersN').textContent = '–';
+    if(item.supabaseId){
+      sb.from('comments').select('id', { count:'exact', head:true }).eq('title_id', item.supabaseId).then(r=>{
+        if(token === detailLoadToken && currentDetailTitle === item.k && r && typeof r.count === 'number'){
+          document.getElementById('detailComments').textContent = r.count.toLocaleString('id-ID');
+        }
+      }).catch(()=>{});
+    }
     bookmarkBtn._paint = paintStats;
 
     const synEl = document.getElementById('detailSynopsis');
@@ -4732,7 +4739,6 @@
     if(rin) cm.draft = rin.value;
     document.getElementById('cmCount').textContent =
       cm.unavailable ? 'Komentar' : (cm.total.toLocaleString('id-ID') + ' komentar');
-    { const dc = document.getElementById('detailComments'); if(dc && !cm.unavailable) dc.textContent = cm.total; }
     document.getElementById('cmSortLabel').textContent = cm.sort === 'top' ? 'Terpopuler' : 'Terbaru';
     if(cm.unavailable){
       list.innerHTML = '<div class="cm-note">' + (isAdmin()
