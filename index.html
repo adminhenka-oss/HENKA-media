@@ -175,6 +175,12 @@
     background: var(--bg-panel); border:1px solid var(--border); scroll-snap-align:start; cursor:zoom-in;
   }
   .ip-imgs.one img{ width:70%; aspect-ratio:auto; height:auto; max-height:420px; }
+  .info-tabs{ gap:8px; padding:14px 16px 12px; }
+  .info-tab{ flex:none; padding:8px 18px; border:1px solid var(--border); border-radius:999px; background: var(--bg-panel); font-size:0.88rem; font-weight:600; }
+  .info-tab.on{ background:linear-gradient(135deg, var(--accent), #9168f5); border-color:transparent; color:#fff; }
+  .info-tab.on::after{ display:none; }
+  .ip-imgs img{ width:54%; }
+  .ip-imgs.one img{ width:60%; max-height:360px; }
   .info-note{ padding:60px 28px; text-align:center; color: var(--text-muted); font-size:0.9rem; line-height:1.5; }
   .info-note b{ display:block; margin-bottom:6px; color: var(--text); font-size:1rem; }
   .info-more{
@@ -617,6 +623,8 @@
   }
   .koleksi-header h1{ font-size:1.5rem; font-weight:800; margin:0 0 6px; }
   .koleksi-header p{ margin:0; color: var(--text-muted); font-size:0.85rem; }
+  .koleksi-header{ text-align:left; padding:22px 20px 4px; border-bottom:none; }
+  .koleksi-header h1{ font-size:1.7rem; }
   .koleksi-wrap{ padding: 22px 20px 10px; }
   .koleksi-empty{
     text-align:center; color: var(--text-faint); font-size:0.9rem;
@@ -1795,6 +1803,15 @@
     return R2_HOST_RE.test(u) ? u.replace(R2_HOST_RE, '/img/') : u;
   }
 
+  // "13,5m" / "575.2k" / "9.2M" -> "13.5m" / "575.2k" / "9.2m" (titik desimal, akhiran huruf kecil)
+  function fmtViews(v){
+    const s = String(v == null ? '' : v).trim();
+    const m = s.match(/^(\d+(?:[.,]\d+)?)\s*([kKmMbB])$/);
+    if(!m) return s;
+    const n = parseFloat(m[1].replace(',', '.'));
+    return isNaN(n) ? s : (Math.round(n * 10) / 10) + m[2].toLowerCase();
+  }
+
   function mapRowToItem(row){
     return {
       supabaseId: row.id,
@@ -1805,7 +1822,7 @@
       cover: proxyUrl(row.cover_url) || null,
       coverDirect: row.cover_url || null,
       ch: (row.source === 'mirror' && !row.chapter_count) ? '' : `CH.${row.chapter_count}`,
-      views: row.views || '0',
+      views: fmtViews(row.views || '0'),
       tag: row.tag,
       rating: row.rating,
       status: row.status,
