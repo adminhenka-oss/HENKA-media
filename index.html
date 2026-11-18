@@ -586,6 +586,29 @@
   .history-progress-fill{ height:100%; background: var(--ember); }
   .history-progress-label{ text-align:right; font-size:0.78rem; color: var(--text-faint); margin-top:6px; }
 
+  /* Riwayat: gaya baru (rata kiri, kartu "Lanjutkan membaca", daftar ringkas) */
+  .riwayat-header{ text-align:left; padding:22px 20px 4px; border-bottom:none; }
+  .riwayat-header h1{ font-size:1.7rem; }
+  .riwayat-tabs{ max-width:none; margin:14px 0 0; padding:0; background:none; border:none; gap:8px; }
+  .rt-btn{ flex:none; border:1px solid var(--border); background: var(--bg-panel); padding:8px 18px; font-weight:600; }
+  .rt-btn.on{ background:linear-gradient(135deg, var(--accent), #9168f5); border-color:transparent; color:#fff; }
+  .history-group::before{ display:none; }
+  .date-pill{ display:block; padding:0; background:none; color: var(--text-faint); font-size:0.78rem; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; margin:22px 0 10px; border-radius:0; }
+  .history-card.h-row{ align-items:center; gap:12px; padding:10px; margin-bottom:10px; border-radius:16px; }
+  .h-row .history-cover{ width:52px; height:70px; }
+  .h-row .history-title{ display:block; font-size:0.92rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .h-row .history-chapter{ margin:3px 0 8px; font-size:0.78rem; }
+  .h-chev{ color: var(--text-faint); font-size:1.2rem; padding-right:4px; }
+  .history-card.hero-card{ position:relative; display:block; min-height:210px; padding:0; overflow:hidden; border-radius:20px; margin-bottom:6px; }
+  .hero-bg{ position:absolute; inset:0; background-size:cover; background-position:center; }
+  .hero-card::after{ content:""; position:absolute; inset:0; background:linear-gradient(to top, rgba(0,0,0,0.82), rgba(0,0,0,0.05) 70%); }
+  .hero-card .badge-row{ z-index:2; }
+  .hero-body{ position:relative; z-index:1; display:flex; flex-direction:column; justify-content:flex-end; min-height:210px; padding:16px; color:#fff; }
+  .hero-body small{ opacity:0.8; font-size:0.78rem; }
+  .hero-body h2{ margin:4px 0 10px; font-size:1.25rem; line-height:1.25; }
+  .hero-body .history-progress-track{ background:rgba(255,255,255,0.25); margin-bottom:12px; }
+  .hero-go{ text-align:center; padding:12px 20px; border-radius:999px; font-weight:700; background:linear-gradient(135deg, var(--accent), #9168f5); }
+
   /* Koleksi page */
   .koleksi-view{ background: var(--bg); min-height:100vh; }
   .koleksi-header{
@@ -2571,7 +2594,7 @@
           ${item.cover ? '' : `<span class="cover-title">${item.t}</span>`}
         </div>
         <div class="card-name"><span>${item.t}</span></div>
-        <div class="upd-meta"><span>${item.tag}</span>${n ? `<span>Ch. ${n}</span>` : ''}</div>
+        <div class="upd-meta"><span>${item.source === 'mirror' ? `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>${item.views}` : item.tag}</span>${n ? `<span>Ch. ${n}</span>` : ''}</div>
         <div class="upd-chs" data-updch="${id}"><div class="upd-ch skel"></div><div class="upd-ch skel"></div></div>
       </div>`;
   }
@@ -5776,24 +5799,41 @@
       if(!g){ g = { date:label, items:[] }; groups.push(g); }
       g.items.push(h);
     });
-    document.getElementById('historyWrap').innerHTML = groups.map(g=>{
+    // bacaan terakhir tampil besar di atas; sisanya daftar ringkas per hari
+    const first = list[0];
+    const heroItem = findItem(first.title);
+    const hp = historyProgress(first, heroItem);
+    const hero = `
+      <div class="history-card hero-card" data-title="${heroItem.k}" data-resume="${first.read}">
+        <div class="hero-bg" style="${coverStyle(heroItem)}"></div>
+        <div class="badge-row">${flagBadge(heroItem)}</div>
+        <div class="hero-body">
+          <small>Lanjutkan membaca · ${historyTimeLabel(first.at)}</small>
+          <h2>${heroItem.t}</h2>
+          <div class="history-progress-track"><div class="history-progress-fill" style="width:${hp.pct}%"></div></div>
+          <div class="hero-go">Lanjut Ch. ${first.read}</div>
+        </div>
+      </div>`;
+    const rest = [];
+    list.slice(1).forEach(h=>{
+      const label = historyDateLabel(h.at);
+      let g = rest.find(x=>x.date === label);
+      if(!g){ g = { date:label, items:[] }; rest.push(g); }
+      g.items.push(h);
+    });
+    document.getElementById('historyWrap').innerHTML = hero + rest.map(g=>{
       const cards = g.items.map(h=>{
         const item = findItem(h.title);
         const p = historyProgress(h, item);
         return `
-          <div class="history-card" data-title="${item.k}" data-resume="${h.read}">
+          <div class="history-card h-row" data-title="${item.k}" data-resume="${h.read}">
             <div class="history-cover" style="${coverStyle(item)}"></div>
             <div class="history-info">
-              <div class="history-top">
-                <span class="history-title">${item.t}</span>
-                <span class="history-time">${historyTimeLabel(h.at)}</span>
-              </div>
-              <div class="history-chapter">Terakhir baca: Chapter ${h.read}</div>
-              <div class="history-progress-track">
-                <div class="history-progress-fill" style="width:${p.pct}%"></div>
-              </div>
-              <div class="history-progress-label">${p.done}/${p.total}</div>
+              <div class="history-title">${item.t}</div>
+              <div class="history-chapter">Ch. ${h.read} dari ${p.total} · ${historyTimeLabel(h.at)}</div>
+              <div class="history-progress-track"><div class="history-progress-fill" style="width:${p.pct}%"></div></div>
             </div>
+            <span class="h-chev">›</span>
           </div>`;
       }).join('');
       return `
