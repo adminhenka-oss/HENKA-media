@@ -606,7 +606,7 @@
   .h-row .history-chapter{ margin:3px 0 8px; font-size:0.78rem; }
   .h-chev{ color: var(--text-faint); font-size:1.2rem; padding-right:4px; }
   .history-card.hero-card{ position:relative; display:block; min-height:210px; padding:0; overflow:hidden; border-radius:20px; margin-bottom:6px; }
-  .hero-bg{ position:absolute; inset:0; background-size:cover; background-position:center; }
+  .hero-bg{ position:absolute; inset:0; background-size:cover; background-position:center 18% !important; }  /* fokus ke bagian atas cover (wajah), bukan tengah */
   .hero-card::after{ content:""; position:absolute; inset:0; background:linear-gradient(to top, rgba(0,0,0,0.82), rgba(0,0,0,0.05) 70%); }
   .hero-card .badge-row{ z-index:2; }
   .hero-body{ position:relative; z-index:1; display:flex; flex-direction:column; justify-content:flex-end; min-height:210px; padding:16px; color:#fff; }
@@ -1160,6 +1160,14 @@
     main{ max-width: 960px; margin:0 auto; }
     header{ max-width:960px; margin:0 auto; width:100%; }
     .grid{ grid-template-columns: repeat(6,1fr); }
+  }
+
+  /* Warna "Seimbang": pilihan aktif (tab dan chip) = ungu redup berbingkai.
+     Ungu penuh dipakai hanya untuk aksi utama (tombol Lanjut, menu bawah aktif, dll). */
+  .tab.active, .src-btn.active, .rt-btn.on, .info-tab.on, .filter-chip.active{
+    background: rgba(124,58,237,0.24);
+    background: color-mix(in srgb, var(--accent) 24%, transparent);
+    color: var(--text); border-color: var(--accent); box-shadow:none;
   }
 </style>
 <link rel="manifest" href="/manifest.json">
